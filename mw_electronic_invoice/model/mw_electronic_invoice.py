@@ -380,12 +380,12 @@ class MWElectronicInvoice(models.Model):
 			'url': url
 		})
 
-		slack = self.env['mw.slack'].sudo()
+		#slack = self.env['mw.slack'].sudo()
 		
-		slack.sendDM('UG3F08BN0', slack_message, '') # Jose Arias
-		slack.sendDM('UHUKTGBA9', slack_message, '') # Renato Mainieri
-		if not bool(constants.get_param('mw_electronic_invoice.is_sandbox')):
-			slack.sendDM('UDR1NA7SQ', slack_message, '') # Veronica Sanchez
+		#slack.sendDM('UG3F08BN0', slack_message, '') # Jose Arias
+		#slack.sendDM('UHUKTGBA9', slack_message, '') # Renato Mainieri
+		#if not bool(constants.get_param('mw_electronic_invoice.is_sandbox')):
+		#	slack.sendDM('UDR1NA7SQ', slack_message, '') # Veronica Sanchez
 		return valid_consecutive
 
 	def generate_json(self):
