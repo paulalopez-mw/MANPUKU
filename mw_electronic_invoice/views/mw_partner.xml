@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="mw_view_res_partner_inherited" model="ir.ui.view">
+            <field name="name">view.res.partner.mw_inherited</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//notebook/page" position="before">
+                    <page string="ATV Information" name="ATV Information" autofocus="autofocus">
+                        <group class="o_group o_group_col_12" string="ATV Information" name="atv_information">
+                            <group>
+                                <field name="mw_id_type"/>
+                                <field name="mw_phone_code"/>
+                            </group>
+                            <group>
+                                <field name="mw_id"/>
+                                <field name="mw_phone_number"/>
+                            </group>
+                        </group>
+                        <group class="o_group o_group_col_12" attrs="{'invisible': ['|','|',('mw_id_type', '=', '03'),('mw_id_type', '=', '04'),('country_id', '!=', 50)], 'required': [('mw_id_type', 'not in', '03'),('mw_id_type', 'not in', '04')]}">
+                            <group>
+                                <field name="mw_province" widget="selection"/>
+                                <field name="mw_canton" widget="selection" domain="[('province', '=', mw_province)]"/>
+                                <field name="mw_other_signs"/>
+                            </group>
+                            <group>
+                                <field name="mw_district" widget="selection" domain="[('canton', '=', mw_canton)]"/>
+                                <field name="mw_street" widget="selection" domain="[('district', '=', mw_district)]"/>
+                            </group>
+                        </group>
+                        <group class="o_group o_group_col_12">
+                            <group>
+                                <!-- <field name="mw_branch"/> -->
+                                <field name="mw_economic_activity"/>
+                            </group>
+                            <group>
+                                <!-- <field name="mw_branch_number"/>
+                                <field name="mw_branch_terminal"/> -->
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+
+        <!-- Action to create and open a new Electronic Invoice -->
+        <record model="ir.actions.server" id="open_electronic_invoice">
+            <field name="activity_user_type">generic</field>
+            <field name="binding_type">action</field>
+            <field name="model_id" ref="mw_electronic_invoice.model_mw_electronic_invoice"/>
+            <field name="name">Open Electronic Invoice</field>
+            <field name="state">code</field>
+            <field name="type">ir.actions.server</field>
+            <field name="usage">ir_actions_server</field>
+            <field name="code">
+obj = env['account.move']
+invoice = obj.sudo().browse(env.context.get('active_ids'))[0]
+
+obj = env['mw.electronic_invoice']
+data = {
+    'invoice' : invoice.id,
+    'emitter' : 1
+}
+
+if not invoice.mw_electronic_invoice:
+    obj_id = obj.sudo().create(data)
+    invoice.sudo().write({'mw_electronic_invoice' : obj_id.id})
+    action = {
+        "type": "ir.actions.act_window",
+        "res_id": obj_id.id,
+        "res_model": "mw.electronic_invoice",
+        "view_mode": "form",
+        "view_type": "form",
+        "target": "current"
+    }
+else :
+    action = {
+        "type": "ir.actions.act_window",
+        "res_id": invoice.mw_electronic_invoice.id,
+        "res_model": "mw.electronic_invoice",
+        "view_mode": "form",
+        "view_type": "form",
+        "target": "current"
+    }
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="mw_account_invoice_inherited">
+            <field name="name">res.invoice.form.view.inherited</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form" />
+            <field name="priority" eval="15"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//header" position="inside">
+                    <button name="%(mw_electronic_invoice.open_electronic_invoice)d" type="action" string="Electronic Invoice" class="oe_highlight"/>
+                    <field name="mw_electronic_invoice" invisible="1"/>
+                    <field name="mw_electronic_invoice_state" invisible="1"/>
+                </xpath>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <!-- Action to create new Electronic Invoices -->
+        <record model="ir.actions.server" id="create_electronic_invoices">
+            <field name="activity_user_type">generic</field>
+            <field name="binding_type">action</field>
+            <field name="binding_model_id" ref="account.model_account_move"/>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="name">Create Electronic Invoices</field>
+            <field name="state">code</field>
+            <field name="type">ir.actions.server</field>
+            <field name="usage">ir_actions_server</field>
+            <field name="code">
+
+for invoice in records:
+    obj = env['mw.electronic_invoice']
+    data = {
+        'invoice' : invoice.id,
+        'emitter' : 1
+    }
+
+    if not invoice.mw_electronic_invoice:
+        obj_id = obj.sudo().create(data)
+        invoice.sudo().write({'mw_electronic_invoice' : obj_id.id})
+            </field>
+        </record>
+
+        <!-- Action to send multiple Electronic Invoices -->
+        <record model="ir.actions.server" id="send_mutliple_since_invoices">
+            <field name="activity_user_type">generic</field>
+            <field name="binding_type">action</field>
+            <field name="binding_model_id" ref="account.model_account_move"/>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="name">Send Electronic Invoice(s)</field>
+            <field name="state">code</field>
+            <field name="type">ir.actions.server</field>
+            <field name="usage">ir_actions_server</field>
+            <field name="code">
+
+for invoice in records:
+    if invoice.mw_electronic_invoice and invoice.mw_electronic_invoice.state == 'pending':
+        invoice.mw_electronic_invoice.generate_bill()
+            </field>
+        </record>
+
+        <!-- Action to send multiple Electronic Invoices -->
+        <record model="ir.actions.server" id="send_mutliple_since_electronic_invoices">
+            <field name="activity_user_type">generic</field>
+            <field name="binding_type">action</field>
+            <field name="binding_model_id" ref="mw_electronic_invoice.model_mw_electronic_invoice"/>
+            <field name="model_id" ref="mw_electronic_invoice.model_mw_electronic_invoice"/>
+            <field name="name">Send Electronic Invoice(s)</field>
+            <field name="state">code</field>
+            <field name="type">ir.actions.server</field>
+            <field name="usage">ir_actions_server</field>
+            <field name="code">
+
+for invoice in records:
+    if invoice.state == 'pending':
+        invoice.generate_bill()
+            </field>
+        </record>
+    </data>
+</odoo>

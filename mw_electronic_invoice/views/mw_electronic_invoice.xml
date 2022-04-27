@@ -1,0 +1,306 @@
+<odoo>
+    <!-- Form View for a Electronic invoice -->
+    <record model="ir.ui.view" id="mw_electronic_invoice.mw_electronic_invoice_form">
+        <field name="name">MW Electronic Invoice</field>
+        <field name="model">mw.electronic_invoice</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form class="o_invoice_form" string="MW Electronic Invoice">
+                <header>
+                    <button string='Generate Bill' name="generate_bill" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'pending')]}" />
+                    <button string='Credit Note' name="create_credit_note" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'completed')]}" />
+                    <button string='Consult Response' name="consultarespuestahacienda" type="object" class="btn-primary" attrs="{'invisible': [('key', '==', False)]}" />
+                    <field name="state" widget="statusbar" nolabel="1" />
+                </header>
+                <sheet string="Invoice">
+                    <div class="container">
+                        <center>
+                            <h1>Invoice details</h1>
+                        </center>
+                    </div>
+                    <h1 class="mt0">
+                        <field name="invoice_number" readonly="1" class="oe_inline" />
+                    </h1>
+                    <field name="invoice_type" />
+                    <group class="o_group">
+                        <group class="o_group o_group_col_8">
+                            <group>
+                                <field name="invoice" string="Invoice" />
+                                <field name="invoice_customer" string="Customer" />
+                                <field name="invoice_payment_term_id" string="Payment Terms" />
+                                <field name="invoice_cash_rounding_id" string="Cash Rounding Method" />
+                            </group>
+                            <group>
+                                <field name="invoice_date" string="Invoice Date" />
+                                <field name="invoice_date_due" string="Due Date" />
+                                <field name="invoice_user_id" string="Salesperson" />
+                                <field name="invoice_currency_id" string="Currency" />
+                            </group>
+                        </group>
+                        <group class="oe_subtotal_footer oe_right o_group o_group_col_6">
+                            <field name="invoice_amount_untaxed" string="Untaxed Amount" />
+                            <field name="invoice_amount_tax" string="Tax" />
+                            <field name="invoice_amount_total" string="Total" class="oe_subtotal_footer_separator" />
+                            <field name="invoice_residual" string="Ammount Due" class="oe_subtotal_footer_separator" />
+                        </group>
+                    </group>
+                    <div class="container mt-2 mb-5">
+                        <center>
+                            <h1>Electronic Invoice</h1>
+                        </center>
+                        <group class="o_group">
+                            <group class="o_group o_group_col_12">
+                                <field name="key" string="Key" readonly="1" />
+                                <field name="sent_XML_file_name" invisible="1" />
+                                <field name="sent_XML_file" filename="sent_XML_file_name" string="Sent File" />
+                                <field name="received_XML_file_name" invisible="1" />
+                                <field name="received_XML_file" filename="received_XML_file_name" string="Received File" />
+                                <field name="on_error" string="On Error" />
+                            </group>
+                        </group>
+                    </div>
+                    <notebook colspan="4">
+                        <page string="Emitter" name="Emitter">
+                            <div>
+                                <h1 class="mt0 oe_left">
+                                    <field name="emitter_name" string="Name" />
+                                </h1>
+                                <field name="emitter_image" widget="image" class="oe_avatar" options="{&quot;preview_image&quot;: &quot;emitter_image_medium&quot;, &quot;size&quot;: [90, 90]}" />
+                            </div>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="emitter" string="Emitter" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="emitter_vat" string="Tax ID" />
+                                    <field name="emitter_email" string="Email" />
+                                    <field name="emitter_phone" string="Phone" />
+                                    <field name="emitter_mobile" string="Mobile" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <h4 class="o_form_label" string="Address"></h4>
+                                    <div>
+                                        <div class="o_address_format" name="div_address">
+                                            <field name="emitter_street" class="o_address_street" placeholder="Street..." />
+                                            <field name="emitter_street2" class="o_address_street" placeholder="Street 2..." />
+                                            <field name="emitter_city" class="o_address_city" />
+                                            <field name="emitter_state_id" class="o_address_state" />
+                                            <field name="emitter_zip" class="o_address_zip" />
+                                            <field name="emitter_country_id" class="o_address_country" />
+                                        </div>
+                                    </div>
+                                    <field name="emitter_lang" string="Language" />
+                                </group>
+                            </group>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="emitter_vat_type" string="ID type" />
+                                    <field name="emitter_phone_code" string="Phone Code" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <field name="emitter_vat_id" string="ID" />
+                                    <field name="emitter_phone_number" string="Phone Number" />
+                                </group>
+                            </group>
+                            <group class="o_group" attrs="{'invisible': ['|',('emitter_vat_type', '=', '03'),('emitter_vat_type', '=', '04')], 'required': [('emitter_vat_type', 'not in', '03'),('emitter_vat_type', 'not in', '04')]}">
+                                <group class="o_group o_group_col_6">
+                                    <field name="emitter_ubication_province" widget="selection" string="Province" />
+                                    <field name="emitter_ubication_canton" string="Canton" widget="selection" domain="[('province', '=', emitter_ubication_province)]" attrs="{'invisible': ['|',('emitter_vat_type', '=', '03'),('emitter_vat_type', '=', '04')], 'required': [('emitter_vat_type', 'not in', '03'),('emitter_vat_type', 'not in', '04')]}" />
+                                    <field name="emitter_other_signs" string="Other Signs" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <field name="emitter_ubication_district" string="District" widget="selection" domain="[('canton', '=', emitter_ubication_canton)]" />
+                                    <field name="emitter_ubication_street" string="Street" widget="selection" domain="[('district', '=', emitter_ubication_district)]" />
+                                </group>
+                            </group>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="emitter_branch" string="Branch" />
+                                    <field name="emitter_economic_activity" string="Economic Activity" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <field name="emitter_branch_number" string="Branch Number" />
+                                    <field name="emitter_branch_terminal" string="Terminal" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Receiver" name="Receiver">
+                            <div>
+                                <h1 class="mt0 oe_left">
+                                    <field name="receiver_name" string="Name" />
+                                </h1>
+                                <field name="receiver_image" widget="image" class="oe_avatar" options="{&quot;preview_image&quot;: &quot;receiver_image_medium&quot;, &quot;size&quot;: [90, 90]}" />
+                            </div>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="receiver_vat" string="Tax ID" />
+                                    <field name="receiver_email" string="Email" />
+                                    <field name="receiver_phone" string="Phone" />
+                                    <field name="receiver_mobile" string="Mobile" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <h4 class="o_form_label" string="Address"></h4>
+                                    <div>
+                                        <div class="o_address_format" name="div_address">
+                                            <field name="receiver_street" class="o_address_street" placeholder="Street..." />
+                                            <field name="receiver_street2" class="o_address_street" placeholder="Street 2..." />
+                                            <field name="receiver_city" class="o_address_city" />
+                                            <field name="receiver_state_id" class="o_address_state" />
+                                            <field name="receiver_zip" class="o_address_zip" />
+                                            <field name="receiver_country_id" class="o_address_country" />
+                                        </div>
+                                    </div>
+                                    <field name="receiver_lang" string="Language" />
+                                </group>
+                            </group>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="receiver_vat_type" string="ID type" />
+                                    <field name="receiver_phone_code" string="Phone Code" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <field name="receiver_vat_id" string="ID" />
+                                    <field name="receiver_phone_number" string="Phone Number" />
+                                </group>
+                            </group>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="receiver_ubication_province" widget="selection" string="Province" attrs="{'invisible': ['|',('receiver_vat_type', '=', '03'),('receiver_vat_type', '=', '04')], 'required': [('receiver_vat_type', 'not in', '03'),('receiver_vat_type', 'not in', '04')]}" />
+                                    <field name="receiver_ubication_canton" string="Canton" widget="selection" domain="[('province', '=', receiver_ubication_province)]" attrs="{'invisible': ['|',('receiver_vat_type', '=', '03'),('receiver_vat_type', '=', '04')], 'required': [('receiver_vat_type', 'not in', '03'),('receiver_vat_type', 'not in', '04')]}" />
+                                    <field name="receiver_other_signs" string="Other Signs" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <field name="receiver_ubication_district" string="District" widget="selection" domain="[('canton', '=', receiver_ubication_canton)]" attrs="{'invisible': ['|',('receiver_vat_type', '=', '03'),('receiver_vat_type', '=', '04')], 'required': [('receiver_vat_type', 'not in', '03'),('receiver_vat_type', 'not in', '04')]}" />
+                                    <field name="receiver_ubication_street" string="Street" widget="selection" domain="[('district', '=', receiver_ubication_district)]" attrs="{'invisible': ['|',('receiver_vat_type', '=', '03'),('receiver_vat_type', '=', '04')], 'required': [('receiver_vat_type', 'not in', '03'),('receiver_vat_type', 'not in', '04')]}" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Header" name="Header">
+                            <div>
+                                <h1 class="mt0 oe_left">Header Details</h1>
+                            </div>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="document_type" string="Document type" readonly="1"/> <!--  attrs="{'readonly': ['|',('invoice_type', '=', 'out_refund'),('state', '!=', 'pending')]}"  -->
+                                    <field name="presentation_situation" string="Voucher Status" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <field name="sale_condition" string="Sale Condition" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="sale_condition_credit_term" string="Credit Term" attrs="{'invisible': [('sale_condition', '=', '01')], 'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="sale_condition_other" string="Other Credit Term" attrs="{'invisible': [('sale_condition', 'not in', '99')], 'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="exchange_rate" string="Exchange Rate" />
+                                </group>
+                            </group>
+                            <h2 class="mt-3 mb-0 oe_left">Payment Method</h2>
+                            <group class="mt-0 o_group">
+                                <group class="o_group o_group_col_8">
+                                    <group>
+                                        <field name="payment_method_cash" string="Cash" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                        <field name="payment_method_card" string="Card" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                        <field name="payment_method_check" string="Check" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                    </group>
+                                    <group>
+                                        <field name="payment_method_transfer" string="Transfer - Bank Deposit" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                        <field name="payment_method_third" string="Raised by Third Parties" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                    </group>
+                                </group>
+                                <group style="width: 33% !important;">
+                                    <group class="o_group_col_12">
+                                        <field name="payment_method_other" string="Other" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                        <field name="payment_method_other_char" string="Other Payment Method" attrs="{'invisible': [('payment_method_other', '=', False)], 'required': [('payment_method_other', '=', True)], 'readonly': [('state', '!=', 'pending')]}" />
+                                    </group>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Tax" name="Tax">
+                            <div>
+                                <h1 class="mt0 oe_left">Taxes and Exemptions</h1>
+                            </div>
+                            <field name="invoice_lines" nolabel="1" widget="section_and_note_one2many" mode="tree,kanban" attrs="{'readonly': [('state', '!=', 'pending')]}">
+                                <tree string="Invoice Lines">
+                                    <field name="display_name" invisible="1" />
+                                    <field name="sequence" widget="handle" />
+                                    <field name="product_id" />
+                                    <!-- <field name="origin" invisible="1"/> -->
+                                    <field name="is_rounding_line" invisible="1" />
+                                    <field name="name" widget="section_and_note_text" />
+                                    <field name="display_type" invisible="1" />
+                                    <field name="company_id" invisible="1" />
+                                    <field name="account_id" />
+                                    <field name="analytic_account_id" />
+                                    <field name="analytic_tag_ids" />
+                                    <field name="mw_departure" />
+                                    <field name="mw_code" />
+                                    <field name="mw_code_type" />
+                                    <field name="quantity" />
+                                    <field name="product_uom_id" />
+                                    <field name="mw_measurement_is_a_service" invisible="1" />
+                                    <field name="mw_measurement_unit" />
+                                    <field name="price_unit" string="Price" />
+                                    <field name="discount" string="Disc" />
+                                    <field name="mw_discount_description" attrs="{'required': [('discount', 'not in', 0)]}" />
+                                    <field name="tax_ids" widget="many2many_tags" />
+                                    <field name="price_subtotal" string="Subtotal" />
+                                    <field name="price_total" string="Total" />
+                                    <field name="currency_id" invisible="1" />
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Others" name="others">
+                            <div>
+                                <h1 class="mt0 oe_left">Other Charges</h1>
+                            </div>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="other_charges_type" string="Type" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                </group>
+                            </group>
+                            <group class="o_group mt-0">
+                                <group class="o_group o_group_col_6">
+                                    <field name="other_charges_name" string="Third Party Name" attrs="{'invisible': [('other_charges_type', '=', False)], 'required': [('other_charges_type', '=', '04')], 'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="other_charges_id_type" string="ID Type" attrs="{'invisible': [('other_charges_type', '=', False)], 'required': [('other_charges_type', '=', '04')], 'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="other_charges_percentage" string="Percentage" attrs="{'invisible': [('other_charges_type', '=', False)], 'readonly': [('state', '!=', 'pending')]}" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <field name="other_charges_details" string="Details" attrs="{'invisible': [('other_charges_type', '=', False)], 'required': [('other_charges_type', '=', '04')], 'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="other_charges_id" string="ID" attrs="{'invisible': [('other_charges_type', '=', False)], 'required': [('other_charges_type', '=', '04')], 'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="other_charges_amount" string="Amount" attrs="{'invisible': [('other_charges_type', '=', False)], 'required': [('other_charges_type', 'not in', False)], 'readonly': [('state', '!=', 'pending')]}" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Reference" name="Reference" attrs="{'invisible': [('document_type', 'not in', '02'), ('document_type', 'not in', '03')]}">
+                            <div>
+                                <h1 class="mt0 oe_left">Reference Details</h1>
+                            </div>
+                            <group class="o_group">
+                                <group class="o_group o_group_col_6">
+                                    <field name="reference_document_type" string="Document Type" attrs="{'required': ['|',('document_type', '=', '02'), ('document_type', '=', '03')], 'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="reference_code" string="Code" attrs="{'required': ['|',('document_type', '=', '02'), ('document_type', '=', '03')], 'readonly': [('state', '!=', 'pending')]}" />
+                                </group>
+                                <group class="o_group o_group_col_6">
+                                    <field name="reference_date" string="Issue Date" attrs="{'required': ['|',('document_type', '=', '02'), ('document_type', '=', '03')], 'readonly': [('state', '!=', 'pending')]}" />
+                                    <field name="key" string="Key" readonly="1" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                </group>
+                            </group>
+                            <group class="o_group mt-0">
+                                <group class="o_group o_group_col_12">
+                                    <field name="reference_reason" string="Reason" attrs="{'required': ['|',('document_type', '=', '02'), ('document_type', '=', '03')], 'readonly': [('state', '!=', 'pending')]}" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Credit Notes" name="Credit Notes" attrs="{'invisible': [('state', '!=', 'completed')]}">
+                            <div>
+                                <h1 class="mt0 oe_left">Credit Notes</h1>
+                            </div>
+                            <field name="credit_notes" nolabel="1" widget="section_and_note_one2many" mode="tree,kanban">
+                                <tree string="Invoice Lines">
+                                    <field name="reference_date" widget="datetime" />
+                                    <field name="key" />
+                                    <field name="state" />
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

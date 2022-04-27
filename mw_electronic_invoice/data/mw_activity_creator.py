@@ -1,0 +1,3601 @@
+# -*- coding: utf-8 -*-
+import logging
+import json
+from urllib.parse import unquote
+from odoo.http import request
+from odoo import SUPERUSER_ID
+from odoo import registry as registry_get
+from odoo import api, fields, models, exceptions
+from odoo.exceptions import AccessError, UserError, RedirectWarning, ValidationError, Warning
+
+_logger = logging.getLogger(__name__)
+
+class MWActivityCreator(models.Model):
+
+    _name = "mw.activity_creator"
+    _model = "mw.activity_creator"
+    _description = "Midware Activity Creator"
+
+    @api.model
+    def read_activities(self):
+
+        activity_data = [
+                            {
+                                "code": "11101",
+                                "name": "CULTIVO Y VENTA DE CEREALES, LEGUMBRES Y GRANOS BASICOS NO INCLUIDAS EN CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE OTROS CULTIVOS NO CONTEMPLADOS EN LOS OTROS GRUPOS, TALES COMO CULTIVO DE PASTO, DE YUTE, LINO, BONOTE, ETC."
+                            },
+                            {
+                                "code": "11102",
+                                "name": "CULTIVO DE PALMA AFRICANA Y OTROS FRUTOS OLEAGINOSOS",
+                                "description": "ESTA CLASE COMPRENDE EL CULTIVO DE FRUTOS OLEAGINOSOS COMO: PALMAS DE ACEITES, OLIVOS (ACEITUNAS), COCOS Y OTROS FRUTOS OLEAGINOSOS. NO SE INCLUYE EL CULTIVO DE SEMILLAS OLEAGINOSAS, VEASE EL CODIGO 11322"
+                            },
+                            {
+                                "code": "11103",
+                                "name": "CULTIVO Y COMERCIALIZACION DE CESPED",
+                                "description": "EN ESTA CLASESE INCLUYE EL CULTIVO Y COMERCIALIZACION DE TODA VARIEDAD DE CESPED O ZACATE DECORATIVO"
+                            },
+                            {
+                                "code": "11201",
+                                "name": "CULTIVO HORTALIZAS LEGUMBRES ESPECIALIDADES HORTICOLAS PRODUCTOS DE VIVERO EXCENTO DE VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS CULTIVOS AL AIRE LIBRE Y BAJO TECHADO DE: HORTALIZAS Y LEGUMBRES;COMO POR EJEMPLO MELONES, MAIZ DULCE; CALABAZAS; PEPINOS, TOMATES,PRODUCCION DE ESPECIALIDADES HORTICOLAS, INCLUSO SEMILLAS DE FLORES, FRUTAS Y HORTALIZAS; ESQUEJES SIN RAICES; BULBOS, TUBERCULOS, RAICES TUBEROSAS, CEBOLLAS, BROTES Y RIZOMAS; TODO LO ANTERIOR INCLUIDOS EN LA NUEVA CANASTA BASICA (DECRETO NO. 37132-H)"
+                            },
+                            {
+                                "code": "11218",
+                                "name": "PRODUCCION DE MINIVEGETALES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRODUCCION DE MINIVEGETALES"
+                            },
+                            {
+                                "code": "11231",
+                                "name": "CULTIVO HORTALIZAS LEGUMBRES ESPECIALIDADES HORTICOLAS PRODUCTOS VIVERO GRABADOS VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS CULTIVOS AL AIRE LIBRE Y BAJO TECHADO DE HORTALIZAS Y LEGUMBRES NO INCLUIDOS EN LA NUEVA CANASTA BASICA (DECRETO NO. 37132-H) ASI COMO EL CULTIVO Y RECOLECCION DE HONGOS, TRUFAS, ACEITUNAS, ALCAPARRAS, PEREJIL. CULTIVO DE PLANTAS QUE DAN FLORES Y CAPULLOS.CULTIVO DE PLANTAS PARA TRASPLANTE Y PARA ORNAMENTACION"
+                            },
+                            {
+                                "code": "11301",
+                                "name": "CULTIVO DE ESPECIAS DE TODO TIPO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL CULTIVO DE ESPECIAS DE HOJA COMO LAUREL, TOMILLO, ALBAHACA, OREGANO, ETC., ESPECIAS DE SEMILLA COMO ANIS Y COMINO Y ESPECIAS DE FLOR COMO CANELA, CLAVO DE OLOR Y OTRAS ESPECIES COMO NUEZ MOSCADA Y JENGIBRE, ACHIOTE Y PIMIENTA."
+                            },
+                            {
+                                "code": "11302",
+                                "name": "CULTIVO DE FRUTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL CULTIVO DE FRUTAS N.C.P. TALES COMO AGUACATE, ANONA, CAIMITO, CARAMBOLA, CAS, GUANABANA, GUAYABA, LIMO DE TODO TIPO, MANZANA(SOLO DE AGUA Y ROSA), SANDIA, TAMARINDO, ETC"
+                            },
+                            {
+                                "code": "11322",
+                                "name": "CULTIVO DE SEMILLAS COMESTIBLES Y GERMINACION DE SEMILLAS OLEAGINOSAS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL CULTIVO DE NUECES Y SEMILLAS COMESTIBLES COMO EL MANI, MACADAMIA Y ALMENDRAS ENTRE OTROS. ADEMAS, LA GERMINACION DE SEMILLAS OLEAGINOSAS (PALMA ACEITERA)."
+                            },
+                            {
+                                "code": "11329",
+                                "name": "CULTIVO DE PLANTAS PARA PREPARAR BEBIDAS Y MEDICINAS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL CULTIVO DE PLANTAS DE CUYAS HOJAS SE PREPARAN BEBIDAS COMO TE, MANZANILLA, MENTA, HIERBABUENA. SE INCLUYE TAMBIEN EL CULTIVO DE PLANTAS MEDICINALES."
+                            },
+                            {
+                                "code": "11340",
+                                "name": "CULTIVO DE PIÑA",
+                                "description": "ESTA ACTIVIDAD INCLUYE EL CULTIVO DE DIVERSAS CLASES DE PIÑA"
+                            },
+                            {
+                                "code": "11349",
+                                "name": "CULTIVO DE CACAO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL CULTIVO DE CACAO"
+                            },
+                            {
+                                "code": "11401",
+                                "name": "CULTIVO DE CAFE",
+                                "description": "EN ESTA CLASE SE INCLUYE EL CULTIVO DEL CAFE"
+                            },
+                            {
+                                "code": "11501",
+                                "name": "CULTIVO DE BANANO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL CULTIVO DEL BANANO DE TODO TIPO, YA SEA PARA EXPORTACION O CONSUMO LOCAL."
+                            },
+                            {
+                                "code": "11701",
+                                "name": "CULTIVO DE CAÑA DE AZUCAR",
+                                "description": "EN ESTA CLASE SE INCLUYE EL CULTIVO DE CAÑA DE AZUCAR."
+                            },
+                            {
+                                "code": "11802",
+                                "name": "CULTIVO Y VENTA DE CEREALES, LEGUMBRES Y GRANOS BASICOS INCLUIDOS EN CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS SIGUIENTES CEREALES: ARROZ, TRIGO, MAIZ, SORGO, CEBADA, AVENA, MIJO, OTROS CEREALES N.C.P; LEGUMINOSAS: FRIJOLES, GARBANZOS, LENTEJAS, HABAS, GUISANTES, OTRAS LEGUMINOSAS; SEMILLAS: LINAZA, MOSTAZA, NIGER, COLZA, CARTAMO, SESAMO, GIRASOL, OTRAS SEMILLAS."
+                            },
+                            {
+                                "code": "11901",
+                                "name": "CULTIVO DE FLORES DE TODO TIPO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRODUCCION DE FLORES VIVAS PARA VENDER O COMERCIALIZAR SIN NINGUN TIPO DE PROCESAMIENTO; POR EJEMPLO: EL CULTIVO DE AMAPOLAS, FLORESTROPICALES EXOTICAS, ANTURIOS, ORQUIDEAS, HELECHOS, AVES DEL PARAISO, AZALIAS,CACTUS ORNAMENTALES, CALAS, CLAVELES, MARGINATA, ESPARRAGO,GERANIOS ENTRE OTRAS;ESTA GRAVADA EN EL IMPUESTO DE VENTAS SEGUN EL ARTICULO 4 DE LA LEY DEL IMPUESTOGENERAL SOBRE LAS VENTAS Y SUS REFORMAS Y EL ARTICULO 5 DE SU REGLAMENTO Y SUSREFORMAS. TAMBIEN EN CONCORDANCIA CON EL DECRETO EJECUTIVO 37132-H DE 17/05/2012"
+                            },
+                            {
+                                "code": "11903",
+                                "name": "VIVEROS",
+                                "description": "SE REFIERE A LA VENTA DE TODO TIPO DE PLANTAS VIVAS, ACCESORIOS E IMPLEMENTOS GRAVADOS EN EL IMPUESTO DE VENTAS."
+                            },
+                            {
+                                "code": "11907",
+                                "name": "PEQUENOS PRODUCTORES AGRICOLAS (FERIAS DEL AGRICULTOR)",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS PEQUENOS PRODUCTORES AGRICOLAS QUE VENDEN SUS PRODUCTOS EXCLUSIVAMENTE AL CONSUMIDOR FINAL Y POR MEDIO DE LAS FERIAS DEL AGRICULTOR, QUE CUMPLEN CON LOS REQUISITOS QUE ESTABLECE LA LEY N 8533 DEL 18 DE JULIO DE 2006, DENOMINADA “LEY DE REGULACION DELAS FERIAS DEL AGRICULTOR” Y SU REGLAMENTO Y QUE CUENTAN CON CARNE VIGENTE PARA PARTICIPAR EN DICHAS FERIAS."
+                            },
+                            {
+                                "code": "12101",
+                                "name": "CRIA DE CABALLOS Y OTROS EQUINOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA CRIA Y REPRODUCCION DE CABALLOS, BURROS, MULOS Y BURDEGANOS."
+                            },
+                            {
+                                "code": "12102",
+                                "name": "PRODUCCION DE SEMEN BOVINO, VENTA DE SEMEN CONGELADO Y DILUYENTE PARA SEMEN",
+                                "description": "ESTA CLASE INCLUYE LA PRODUCCION DE SEMEN BOVINO Y SEGUN EL ARTICULO 5 DEL REGLAMENTO DE LA LEY DEL IMPUESTO GENERAL SOBRE LAS VENTAS SE ENCUENTRA COMO EXENTO, DENTRO DE LOS PRODUCTOS VETERINARIOS, EL \"SEMEN CONGELADO Y DILUYENTE PARA SEMEN"
+                            },
+                            {
+                                "code": "12103",
+                                "name": "CRIA DE ANIMALES DOMESTICOS COMO:OVEJAS Y CABRAS",
+                                "description": "ESTA CLASE INCLUYE LA CRIA DE ANIMALES DOMESTICADOS, COMO: OVEJAS,CABRAS. ESQUILA DE OVEJAS POR EL PROPIETARIO DEL REBANO. EXCLUSIONES: EL ALBERGUE, CUIDA DO Y REPRODUCCION DE GANADO. LA ESQUILA DE OVEJAS POR CONTRATO O A CAMBIO DE UNA RETRIBUCION, LA LANA DE MATADERO. LA ELABORACION DE LECHE FUERA DEL ESTABLECIMIENTO. LA CRIA DE CABALLOS Y OTROS EQUINOS SE INCLUYE EN LA ACTIVIDAD 012101."
+                            },
+                            {
+                                "code": "12201",
+                                "name": "CRIA DE CERDOS",
+                                "description": "CRIA DE CERDOS (ANIMALES DOMESTICADOS)"
+                            },
+                            {
+                                "code": "12202",
+                                "name": "CRIA DE ANIMALES DOMESTICADOS (AVES DE CORRAL)",
+                                "description": "CRIA DE ANIMALES DOMESTICADOS (AVES DE CORRAL, TALES COMO LOS POLLOS, PAVOS, PATOS, GANSOS, EL FAISAN, LA CODORNIZ Y OTRAS ESPECIES EMPARENTADAS)"
+                            },
+                            {
+                                "code": "12203",
+                                "name": "CRIA DE MARIPOSAS",
+                                "description": "SE REFIERE A LOS CRIADEROS DE MARIPOSAS, OBTENCION DE CAPULLOS DE GUSANO DE SEDA Y CAPULLO DE MARIPOSAS DE TODA ESPECIE. GRAVADO EN EL IMPUESTO SOBRE LAS VENTAS DEBIDO A QUE EL DECRETO NO.31189 MAG-H-MEIC QUE LAS EXIMIA DE ESTE IMPUESTO, FUE DEROGADO POR EL DECRETO NO. 31939 MAG-H-MEIC DEL 20/08/2004."
+                            },
+                            {
+                                "code": "12204",
+                                "name": "CRIA Y VENTA DE OTROS ANIMALES SEMIDOMESTICADOS O SALVAJES",
+                                "description": "ESTA CLASE INCLUYE LA CRIA DE ANIMALES EN CAUTIVERIO SEMIDOMESTICADOS O SALVAJES COMO LOS PAJAROS, INSECTOS, REPTILES, CONEJOS Y VISONES."
+                            },
+                            {
+                                "code": "12301",
+                                "name": "CRIA Y VENTA DE GANADO BOVINO (VACUNO) Y BUFALO",
+                                "description": "EN ESTA CLASE COMPRENDE LA CRIA DE GANADO BOVINO PARA LA PRODUCCION DE CARNE, ADEMAS INCLUYE LA CRIA DE BUFALOS Y OTROS ANIMALES BOVINOS."
+                            },
+                            {
+                                "code": "12302",
+                                "name": "PRODUCCION DE LECHE CRUDA Y OTROS PRODUCTOS LACTEOS SIN PROCESAMIENTO INCLUIDOS EN CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRODUCCION DE LECHE CRUDA EN LECHERIA SIN PROCESAR; LA PRODUCCION DE LECHE AGRIA, LECHE EN POLVO, LECHE FRESCA, LECHE LIQUIDA, FORMULAS NUTRITIVA, MATERNIZADADA Y SUPLEMENTOS LACTEOS, NATILLA, EXCEPTO LIGHT O LIGERA. LA CUAJADA, QUESO RALLADO O MOLIDO. NO INLCUYE QUESO TIPO MOZZARELLA, QUESOS MADUROS (PARMESANO NI SUS COMBINACIONES), QUESO NO MADURADO, INCLUSO EL QUESO FRESCO DECRETO 39678-COMEX-MEIC-MAG-S U OTRO. NO INCLUYE QUESOS FRESCOS TIPO MOZARRELLA O COTTAGE."
+                            },
+                            {
+                                "code": "12303",
+                                "name": "PRODUCCION DE PRODUCTOS LACTEOS Y SUS DERIVADOS INCLUIDOS EN CANASTA BASICA CON RECONOCIMIENTO DE CREDITOS FISCALES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ACTIVIDAD CON EL CODIGO12302 PERO SE INCLUYE OBLIGACION 104 PARA RECONOCIMIENTO DE CREDITOS FISCALES DE CONFORMIDAD CON EL ARTICULO 30 DEL REGLAMENTO DEL IVA"
+                            },
+                            {
+                                "code": "12401",
+                                "name": "PRODUCCION Y VENTA DE HUEVOS DE CUALQUIER TIPO, EXCEPTO LOS DE GALLINA",
+                                "description": "INCLUYE LA PRODUCCION Y VENTA DE HUEVOS DE TODO TIPO DE AVES DE CORRAL, ASI COMO LA INDUSTRIALIZACION DE HUEVOS ENTEROS, YEMAS DE HUEVO Y HUEVOS EN CONSERVA. SE EXCEPTUAN DE ESTA CLASE LOS HUEVOS DE GALLINA FRESCOS CON CASCARON, LOS CUALES SE ENCUENTRAN EXENTOS DEL IMPUESTO SOBRE LAS VENTAS Y SE CLASIFICAN EN EL CODIGO 522008"
+                            },
+                            {
+                                "code": "12402",
+                                "name": "CRIA DE ANIMALES Y OBTENCION DE PRODUCTOS DE ANIMALES VIVOS",
+                                "description": "ESTA CLASE INCLUYE LA PRODUCCION Y VENTA DE MIEL DE ABEJA NATURAL"
+                            },
+                            {
+                                "code": "12403",
+                                "name": "PRODUCCION DE HUEVOS DE GALLINA INCLUIDOS EN LA CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRODUCCION DE HUEVOS DE GALLINA FRESCOS CON CASCARON EXENTOS DEL IMPUESTO GENERAL SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "13001",
+                                "name": "CULTIVO DE PRODUCTOS AGRICOLAS EN COMBINACION CON LA CRIA DE ANIMALES (EXPLOTACI",
+                                "description": "ESTA CLASE COMPRENDE LA EXPLOTACION MIXTA DE CULTIVOS Y ANIMALES SIN ESPECIALIZACION EN NINGUNA DE LAS ACTIVIDADES. SI EL CULTIVO DE PRODUC AGRIC O LA CRIA DE ANIMALES REPRESENTAN POR UNIDAD UNA PROPORCION IGUAL O SUPERIOR AL 66%, LA ACTIVIDAD MIXTA NO DEBE CLASIFICARSE EN ESTA CLASE, SINO ENTRE LOS CULTIVOS O LAS ACTIV DE CRIA DE ANIMALES."
+                            },
+                            {
+                                "code": "14001",
+                                "name": "SERVICIO DE JARDINERIA Y/O DISEÑO PAISAJISTA",
+                                "description": "INCLUYE LAS ACTIVIDADES POR CONTRATA O A CAMBIO DE UNA RETRIBUCION EL CUIDO, RECORTE E INSTALACION DE PRADOS Y JARDINES"
+                            },
+                            {
+                                "code": "14002",
+                                "name": "RECOLECCION DE COSECHAS Y ACTIVIDADES CONEXAS",
+                                "description": "INCLUYE LAS ACTIVIDADES POR CONTRATA O A CAMBIO DE UNA RETRIBUCION SUMINISTRO DE MAQUINARFIA AGRICOLA ( INCLUYE OPERARIOS), LA RECOLECCION DE COSECHAS DE TODO TIPO DE CULTIVOS Y ACTIVIDADES RELACIONADAS CON LA MISMA TALES COMO: CORTA, LIMPIEZA, SECADO, DESCASCARILLADO, ENRIADO, REFRIGERACION Y ENVASE A GRANEL. ASI COMO LAS ACTIVIDADES DE CONTRATISTAS DE MANO DE OBRA PARA EL SECTOR AGROPECUARIO Y GANADERO."
+                            },
+                            {
+                                "code": "14003",
+                                "name": "FUMIGACION DE CULTIVOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS POR CONTRATA O A CAMBIO DE RETRIBUCION DE CUALQUIER ACTIVIDAD FITOSANITARIAS POR EJEMPLO: FUMIGADO AEREO O TERRESTRE PARA EL CUIDADO DE TODO TIPO DE CULTIVOS O PREPARACION DE TERRENOS PARA USO AGRICOLA"
+                            },
+                            {
+                                "code": "14004",
+                                "name": "SERVICIO DE PLANTACION DE ARBOLES Y SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO A CAMBIO DE UNA RETRIBUCION O POR CONTRATO, DE PLANTACION DE ARBOLES, PLANTAS, ETC. PRESTADOS POR UNA EMPRESA O INDIVIDUO."
+                            },
+                            {
+                                "code": "14005",
+                                "name": "MANEJO E INSTALACION DE SISTEMAS DE RIEGO",
+                                "description": "ESTA CLASE INCLUYE MANEJO DE SISTEMAS DE RIEGO CON FINES AGRICOLAS, LOS CUALES SIRVEN PARA HUMEDECER EL SUELO DESTINADO A LA PRODUCCION AGRICOLA."
+                            },
+                            {
+                                "code": "15001",
+                                "name": "CAZA ORDINARIA MEDIANTE TRAMPAS, Y REPOBLACION DE ANIMALES DE CAZA, INCLUSO LAS ACTIVIDADES DE SERVICIOS CONEXAS.",
+                                "description": "EN ESTA CLASE SE INCLUYEN LA CAZA ORDINARIA Y MEDIANTE TRAMPAS EFECTUADAS CON FINES COMERCIALES: LA CAPTURA DE ANIMALES, VIVOS O MUERTOS, PARA ALIMENTO, POR SUS PIELES Y CUEROS, Y PARA SU UTILIZACION EN INVESTIGACIONES, EN PARQUES ZOOLOGICOS Y COMO ANIMALES CASEROS; LA CAPTURA DE MAMIFEROS MARINOS, COMO POR EJEMPLO MORSAS Y FOCAS. PRODUCCION DE PIELES FINAS, CUEROS DE REPTILES Y OLUMAS DE AVES MEDIANTE ACTIVIDADES DE CAZA ORDINARIA Y CON TRAMPAS. REPRODUCCIONY REPOBLACION DE ANIMALES DE CAZA. ACTIVIDADES DE SERVICIOS PARA PROMOVER LA CAZA ORDINARIA Y MEDIANTE TRAMPAS CON FINES COMERCIALES"
+                            },
+                            {
+                                "code": "20001",
+                                "name": "VENTA DE ARBOLES EN PIE (ARBOLES DE REFORESTACION)",
+                                "description": "ESTA ACTIVIDAD SE BASA EN LA PLANTACION DE ARBOLES DE REFORESTACION, LOS CUALESUNA VEZ LISTOS PARA LA PRODUCCION DE MADERA, SON VENDIDOS EN PIE A TERCERAS PERSONAS QUIENES LOS TALAN Y SACAN LA MADERA PARA LA VENTA.ESTA ACTIVIDAD NO ESTA SUJETA AL IMPUESTO DE VENTAS,DE CONFORMIDAD CON LOS ARTICULOS 9 DE LA LEY DEL IMPUESTO GENERAL SOBRE LAS VENTAS Y 5 DE SU REGLAMENTO."
+                            },
+                            {
+                                "code": "20002",
+                                "name": "EXTRACCION Y/O VENTA DE MADERA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXTRACCION DE MADERA PARA LA VENTA, REALIZADA PORCAMPAMENTOS MADEREROS, CONTRATISTAS Y LEÑADORES QUE SE DEDICAN PRINCIPALMENTE ALA TALA DE ARBOLES Y A PRODUCIR MADERA EN BRUTO, COMO ENTIBOS, TROZAS, ESTACAS,DURMIENTES, ETC. LA VENTA DE MADERA SE ENCUENTRA AFECTA AL 10% DEL IMPUESTOSOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "20005",
+                                "name": "ACTIVIDADES DE CONSERVACION DE BOSQUES. (SERVICIOS AMBIENTALES, VENTA DE OXIGENO).",
+                                "description": "ESTA ACTIVIDAD LA REALIZAN LOS FINQUEROS QUE CONSERVAN SUS BOSQUES PRIVADOS. ESTA REMUNERACION ECONOMICA DE PROPIETARIOS DE BOSQUES PRIVADOS EN EL PAIS ES POR LA VENTA DE CERTIFICADOS DE FIJACION DE CARBONO AL SUELO, LO QUE SE CONOCE COMO VENTA DE OXIGENO. ESTOS CERTIFICADOS DE FIJACION DE CARBONO SIRVEN PARA QUE LOS PAISES INDUSTRIALIZADOS CUMPLAN CON SU CUOTA PARA DISMINUIR LA GENERACION DE GASES DE EFECTO INVERNADERO, YA QUE ALGUNAS NACIONES INDUSTRIALIZADAS NO TIENEN SUFICIENTES BOSQUES, COMPRAN ESTOS CERTIFICADOS A PAISES COMO COSTA RICA, QUE CUENTAN CON PLANES DE CONSERVACION DE BOSQUES. EXENTA DE OBLIGACIONES SEGUN OFICIO DGT-1326-07 DEL 18 DE OCTUBRE DE 2007"
+                            },
+                            {
+                                "code": "50001",
+                                "name": "PESCADORES ARTESANALES EN PEQ. ESCALA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS PESCADORES ARTESANALES EN PEQUEÑA ESCALA"
+                            },
+                            {
+                                "code": "50002",
+                                "name": "PESCADORES ARTESANALES MEDIOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS PESCADORES ARTESANALES DE MEDIANA ESCALA"
+                            },
+                            {
+                                "code": "50003",
+                                "name": "CRIADERO DE PECES, CRUSTACEOS O MOLUSCOS. COMERCIALIZACION DE LARVAS DE ESPECIES MARINAS",
+                                "description": "REPRODUCCION Y CRIA DE TODO TIPO DE PECES, CRUSTACEOS O MOLUSCOS. EXPLOTACION DE CRIADEROS DE LARVAS DE ESPECIES MARINAS COMO: OSTRAS, EMBRIONES DE MEJILLONES Y OTROS MOLUSCOS, CRIAS DE BOGAVANTES, CAMARONES EN ESTADO POSLARVAL Y OTROS EMBRIONES DE CRUSTACEOS, Y ALEVINES Y JARAMUGOS."
+                            },
+                            {
+                                "code": "50005",
+                                "name": "PESCADORES EN GRAN ESCALA",
+                                "description": "SE REFIERE A LA PESCA DE ALTURA, COSTERA E INTERIOR, REALIZADA CON FINES COMER- CIALES, DE TODO TIPO DE PESCADO, CRUSTACEOS Y MOLUSCOS MARINOS, CUALQUIE OTRO TIPO DE ANIMALES ACUATICOS."
+                            },
+                            {
+                                "code": "101001",
+                                "name": "EXTRACCION Y AGLOMERACION DE CARBON DE PIEDRA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXTRACCION DE DIVERSOS TIPOS DE CARBON DE PIEDRA: ANTRACITA, CARBONES BITUMINOSOS Y OTROS TIPOS DE CARBON MINERAL. EXTRACCION EN MINAS SUBTERRANEAS Y A CIELO ABIERTO LAS OPERACIONES MINERAS INCLUYEN LA LIMPIEZA, CRIBADO, CLASIFICACION, PULVERIZACION Y OTRAS ACTIVIDADES PARA CLASIFICAR, MEJORAR LA CALIDAD Y FACILITAR EL TRANSPORTE. SE INCLUYEN LAS OPERACIONES PARA RECUPERAR EL CARBON MINERAL DE ESCOMBRERAS. FABRICACION DE BRIQUETAS Y OTROS COMBUSTIBLES SOLIDOS COMPUESTOS PRINCIPALMENTE DE CARBON DE PIEDRA. GASIFICACION IN SITU DEL CARBON."
+                            },
+                            {
+                                "code": "111001",
+                                "name": "EXTRACCION DE PETROLEO CRUDO Y GAS NATURAL",
+                                "description": "SE INCLUYE LA EXTRACCION DE PETROLEO CRUDO Y DE MINERALES BITUMINO SOS, ES DECIR,PRODUCTOS NATURALES,CUALESQUIERA SEA SU COMPOSICION E INDEPENDIENTEMENTE DE QUE SEAN OBTENIDOS MEDIANTE LA PERFORACION DE POZOS EN YACIMIENTOS DE PETROLEO NORMAL O CONDENSADO, O MEDIANTE LA EXTRACCION DE MINERALES BITUMINOSOS. LA EXTRACCION DE PETROLEO CRUDO PUEDE INCLUIR LOS PROCESOS SIGUIENTES: DECANTACION; DESHITRATACION; ESTABILIZACION;ELIMINACION DE FRACCIONES MUY LIVIANAS Y OTROS PROCESOS MENOS IMPORTANTES,SIEMPRE QUE NO ALTEREN LAS PROPIEDADES FUNDAMENTALES DEL PRODUCTO. PRODUCCION DE HIDROCARBUROS CRUDOS EN ESTADO GASEOSO (GAS NATURAL). EXPLOTACION CON EL MISMO FIN DE DEPOSITOS DE ARENAS ALQUITRANADAS Y ESQUISTOS BUTUMINOSOS. LA EXTRACCION INCLUYE LAS OPERACIONES DE PERFORACION, TERMINACION Y EQUIPAMIENTO DE POZOS NO REALIZADAS POR CONTRATA NI A CAMBIO DE UNARETRIBUCION. TAMBIEN INCLUYE LA LICUEFACCION Y REGASIFICACION DEL GAS NATURAL PARA FACILITAR SU TRANSPORTE Y LA PRODUCCION EN LUGAR DE EXTRACCION, CON GASES DE PETROLEO Y DE YACIMIENTOS DE GAS, DE HIDROCARBUROS LIQUIDOS."
+                            },
+                            {
+                                "code": "120001",
+                                "name": "EXTRACCION DE MINERALES DE URANIO Y TORIO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXTRACCION DE MINERALES ESTIMADOS PRINCIPALMENTE POR SU CONTENIDO DE URANIO O TORIO, COMO POR EJEMPLO LA PECBLENDA. TAMBIEN SE INCLUYE LA CONCENTRACION DE ESOS MINERALES."
+                            },
+                            {
+                                "code": "141001",
+                                "name": "EXTRACCION DE PIEDRA, ARENA Y ARCILLA",
+                                "description": "SE REFIERE A LA EXPLOTACION DE CANTERAS QUE PRODUCEN PIEDRA PARA CONSTRUCCION, PIEDRA SIN LABRAR, CANTERAS DE ARENA, ARCILLA PARA INDUSTRIA."
+                            },
+                            {
+                                "code": "142101",
+                                "name": "EXTRACCION DE MINERALES Y SUSTANCIAS PARA LA FABRICACION DE ABONOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXTRACCION DE MINERALES, ESTIMADOS POR SU CONTENIDODE POTASIO, NITROGENO, POTASIO, AZUFRE, BARIO, BORATOS NATURALES SULFATOS DEMAGNESIO Y OTROS MINERALES COMO TIERRAS COLORANTES Y FLUORITA."
+                            },
+                            {
+                                "code": "142201",
+                                "name": "EXTRACCION DE SAL",
+                                "description": "SE INCLUYE EXTRACCION, MOLIENDA Y CRIBADO (PURIFICAR) DE SAL."
+                            },
+                            {
+                                "code": "142901",
+                                "name": "EXPLOTACION DE OTRAS MINAS Y CANTERAS N.C.P.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXTRACCION EN MINAS Y CANTERAS DE MINERALES Y OTROS MATERIALES NO CLASIFICADOS EN OTRAS PARTE: MATERIALES ABRASIVOS, PIEDRAS PRE- CIOSAS."
+                            },
+                            {
+                                "code": "142902",
+                                "name": "VENTA DE ASFALTO/MEZCLA ASFALTICA",
+                                "description": "ASTA CLASE INCLUYE LA VENTA DE MEZCLA DE ASFALTO CAPA ASFALTICA, Y LA QUE SE DE NOMINA MACADAM ALQUINATRADO (NO ES ASFALTO) LA CLASIFICASION ARANCELARIA ES LA 2517.30.00.00 SUJETA AL IMPUESTO GENERAL SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "151101",
+                                "name": "ELABORACION Y CONSERVACION DE CARNE Y EMBUTIDOS DE GANADO VACUNO, PORCINO Y DE AVES",
+                                "description": "EN ESTA CLASE SE INCLUYEN LA EXPLOTACION DE CARNE CON O SIN MATADEROS, LA PRE- PARACION Y CONSERVACION DE CARNE DE VACA, CERDO, OVEJA, CABRA, CABALLO, AVES DE CORRAL, CONEJO, ESPECIES DE CAZA Y OTROS ANIMALES, ASIMISMO, SE INCLUYE LA ELABORACION DE EMBUTIDOS SIN ENVASAR O EMPACAR. SI DICHOS EMBUTIDOS SON ENVASADOS O ENLATADOS, SE INCLUYEN EN EL CODIGO 151105."
+                            },
+                            {
+                                "code": "151103",
+                                "name": "PRODUCCION DE CUEROS Y PIELES SIN CURTIR",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRODUCCION DE CUEROS Y PIELES SIN CURTIR Y OTROS SUBPRODUCTOS CONEXOS, TALES COMO LANA DE MATADERO, PLUMAS Y PLUMONES, DIENTES Y HUESOS."
+                            },
+                            {
+                                "code": "151105",
+                                "name": "PRODUCCION DE EMBUTIDOS EMPACADOS, ENVASADO Y ENLATADO",
+                                "description": "ESTA CLASE INCLUYE LA PRODUCCION DE EMBUTIDOS EMPACADOS, ENLATADOS Y ENVASADOS COMO:CHORIZO, MORTADELA, PATE, SALCHICHAS, SALCHICHON Y SIMILARES."
+                            },
+                            {
+                                "code": "151201",
+                                "name": "ELABORACION Y CONSERVACION DE PESCADO Y SUS DERIVADOS",
+                                "description": "INCLUYE LA CONSERVACION DE PESCADO MEDIANTE PROCESOS DE SESECACION, AHUMADO, SALADURA, INMERSION EN SAL, Y ENLATADO. PRODUCCION DE PESCADO COCIDO, FILETES FRESCOS, REFRIGERADOS O CONGELADOS. PRODUCCION DE PESCADO FERMENTADO Y DE HARINA DE PESACADO PARA CONSUMO HUMANO Y ALIMENTO ANIMAL. ASIMISMO, SE INCLUYE LA ELABORACION Y CONSERVACION DE PESCADO, CRUSTACEOS Y MOLUSCOS REALIZADOS EN BUQUES."
+                            },
+                            {
+                                "code": "151301",
+                                "name": "ELABORACION Y CONSERVACION DE FRUTAS, LEGUMBRES Y HORTALIZAS",
+                                "description": "ESTA CLASE ABARCA LA ELABORACION DE ALIMENTOS COMPUESTOS.PRINCIPALMENTE DE FRUTAS, LEGUMBRES U HORTALIZAS CONSERVACION MEDIANTE CONGELACION DE FRUTAS, LEGUMBRES Y HORTALIZAS, COCIDAS O SIN COCER, INCLUSO PREPARACION Y CONSERVACION DE JUGOS DE FRUTAS Y HORTALIZAS.CONSERVACION POR OTROS MEDIOS, TALES COMO DESECACION O INMERSION EN ACEITE O VINAGRE.PROCESAMIENTO DE PATATAS.ELABORACION DE SEMOLAS PREPARADAS DE LEGUMBRES Y HORTALIZAS.ELABORACION DE HARINA Y SEMOLA DE PATATA.CONSERVACION DE FRUTAS, HORTALIZAS Y LEGUMBRES MEDIANTE ENVASE EN RECIPIENTES HERMETICOS.ELABORACION DE COMPOTAS, MERMELADAS Y JALEAS."
+                            },
+                            {
+                                "code": "151304",
+                                "name": "PRODUCCION DE CONCENTRADOS PARA JUGOS (CITRICULTURA)",
+                                "description": "EN ESTA CLASE DE INCLUYE LA PRODUCCION DE CONCENTRADOS DE FRUTAS Y VERDURAS, COMO MATERIA PRIMA PARA LA FABRICACION DE JUGOS DE MENOR CONCENTRACION PARA CONSUMO FINAL. NO AFECTO AL IMPUESTO ESPECIFICO A LAS BEBIDAS NO ALCOHOLICAS, EN EL ENTENTIDO QUE DICHA MATERIA PRIMA NO ES PARA CONSUMO FINAL. VER OFICIO DGT-00055 DEL 23-01-2002."
+                            },
+                            {
+                                "code": "151401",
+                                "name": "ELABORACION DE ACEITES Y GRASAS DE ORIGEN VEGETAL Y ANIMAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION DE ACEITES Y GRASAS A PARTIR DE SUSTANCIAS ANIMALES Y VEGETALES, EXCEPTO LA EXTRACCION Y REFINACION DE GRA DE CERDO Y OTRAS GRASAS COMESTIBLES DE ORIGEN ANIMAL. EXTRACCION DE CEITE DE PESCADO Y DE HIGADO DE PESCADO. PRODUCCION DE ACEITES VEGETALES, INCLUSO ACEITES EXTRAIDOS DE NUECES Y ACEITUNAS. PRODUCCION DE MARGARINA Y OTROS ACEITES DE MESA Y GRASAS PARA COCINAR."
+                            },
+                            {
+                                "code": "152001",
+                                "name": "PRODUCCION DE HELADOS Y OTROS PRODUCTOS SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE HELADOS Y OTROS PRODUCTOS COMESTIBLESSIMILARES, CON CREMA, CHOCOLATE, FRUTAS O SIN ELLOS._INCLUYE LA ELABORACION DE HELADO EMPACADO EN BOLSAS DE POLIETILENO CONOCIDOS COMO BOLIS."
+                            },
+                            {
+                                "code": "152002",
+                                "name": "ELABORACION DE PRODUCTOS LACTEOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS PRODUCTOS LACTEOS LOS CUALES POR SU PROCESO DE ELABORACION, SE ENCUENTRAN AFECTOS AL IVA, TALES COMO: YOGURT,QUESOS ENVASADOS O ENLATADOS, REQUESON ENVASADO, QUESOS MADUROS, ENTRE OTROS. . LOS HELADOS Y SIMILARES SE ENCUENTRAN EL CODIGO 152001 Y LAS BEBIDAS ENVASADAS DE LECHE SABORIZADAS SE ENCUENTRAN EN EL CODIGO 155402 YA QUE SON BEBIDAS SIN CONTENIDO ALCOHOLICO, LAS CUALES TIENEN UN IMPUESTO ESPECIFICO."
+                            },
+                            {
+                                "code": "152003",
+                                "name": "ELABORACION Y VENTA DE PRODUCTOS LACTEOS INCLUIDOS EN CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA LECHE AGRIA, LECHE EN POLVO (ENTERA, SEMIDESCREMADA, DESCREMADA, FROTIFICADA, DESLACTOSADA), LECHE LIQUIDA (FRESCA, ENTERA, SEMIDESCREAMDA, DESCREMADA, FORTIFICADA, DESLACTOSADA), FORMULA NUTRITIVA, AMTERNIZADA Y SUPLEMENTOS LACTEOS, NATILLA, EXCEPTO LIGHT O LIGERA. Y LA PRODUCCION DE QUESO EN LA 012303. LOS DERIVADOS DE LA LECHE AFECTOS A IVA SE NCUENTRAN EN EL CODIGO 152002"
+                            },
+                            {
+                                "code": "153101",
+                                "name": "SERVICIO DE MOLIENDA",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE MOLIENDA DE MAIZ, SOYA, ALVERJAS, ARROZ,LEGUMBRES, SORGO. LA MOLIENDA DE CAFE SE ENCUENTRA EN EL GRUPO 1549 Y LA MOLIEN-DA DE MALTA EN EL GRUPO 1553."
+                            },
+                            {
+                                "code": "153102",
+                                "name": "ELABORACION DE HARINAS PREMEZCLADAS Y PREPARADAS PARA LA FABRICACION DE PRODUCTOS DE PANADERIA Y REPOSTERIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA MOLIENDA DE CEREALES, COMO HARINA, SEMOLINA, SEMOLA Y GRANULOS DE TRIGO, CENTENO, AVENA, MAIZ Y OTROS CEREALES. MOLIENDA DE LEGUMBRES: HARINA Y SEMOLA DE LEGUMINOSASDESECADAS, DE RAICES Y TUBERCULOS, Y DE NUECES COMESTIBLES. ELABORACION DE ALIMENTOS PARA EL DESAYUNO MEDIANTE EL TOSTADO O LA INSUFLACION DE GRANOS DE CEREALES O MEDIANTE EL MACERAMIENTO, PERLADO, HOJALDRADO Y PULIMENTO DE GRANOS. ELABORACION DE HARINA Y DE MASA MEZCLADA Y PREPARADA PARA LA FABRICACION DE PAN, PASTELES, BIZCOCHOS, PANQUEQUES, ETC. EXCLUSION:LA ELABORACION DE HARINA Y SEMOLA DE PATATA SE INCLUYE EN LA CLASE 1513 (ELABORACION Y CONSERVACION DE FRUTAS, LEGUMBRE S Y HORTALIZAS). LA MOLIENDA DE MAIZ HUMEDO SE INCLUYE EN LA CLASE 1532 (ELABORACION DE ALMIDONES Y PRODUCTOS DERIVADOS DEL ALMIDON)."
+                            },
+                            {
+                                "code": "153103",
+                                "name": "BENEFICIO DE ARROZ",
+                                "description": "ESTA CLASE INCLUYE EL PILADO DE ARROZ, LA. MOLIENDA DE ARROZ: ARROZ DESCASCARILLADO, MOLIDO, PULIDO , BLANQUEADO, SEMICOCIDO O CONVERTIDO. PRODUCCION DE HARINA DE ARROZ."
+                            },
+                            {
+                                "code": "153104",
+                                "name": "ELABORACION DE PRODUCTOS DE MOLINERIA INCLUIDOS EN CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE HARINAS FINAS Y GRUESAS DE TRIGO Y OTROS CEREALES. EXENTO DE IMPUESTO DE VENTAS ART. 5 DELREGLAMENTO DE VENTAS."
+                            },
+                            {
+                                "code": "153201",
+                                "name": "ELABORACION DE PRODUCTOS DERIVADOS DE ALMIDON",
+                                "description": "ESTA CLASE ABARCA LA ELABORACION DE ALMIDONES: ALMIDONES DE MAIZ, ARROZ Y OTROS GRANOS, DE PATATA, DE YUCA (MANDIOCA) Y DE OTRAS MATERIAS VEGETALES."
+                            },
+                            {
+                                "code": "153301",
+                                "name": "ELABORACION DE ALIMENTOS PARA ANIMALES DESTINADOS AL CONSUMO HUMANO",
+                                "description": "ESTA CLASE INCLUYE LA PRODUCCION DE ALIMENTOS, INCLUSO MEZCLAS PRELIMINARES, ALIMENTOS CONCENTRADOS, FORRAJE EDULCORADO Y ALIMENTOS SUPLEMENTARIOS; PREPARADOS PARA ANIMALES DESTINADOS PARA EL CONSUMO HUMANO TALES COMO: AVES DE CORRAL, CERDOS, GANADO DE ENGORDE,PECES DE TODO TIPO, ENTRE OTROS. EXCLUSION: EL ALIMENTO PARA MASCOTAS COMO PERROS, GATOS, PECES TROPICALES, PAJAROS Y OTRAS MASCOTAS SE ENCUENTRA GRAVADO POR EXCEPCION DEL ARTICULO 5 DEL REGLAMENTO DE LA LEY DEL IMPUESTO SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "153302",
+                                "name": "ELABORACION DE PACAS DE HENO",
+                                "description": "ESTA CLASE INCLUYE EL PROCESAMIENTO DE LAS PLANTAS HERBACEAS QUE SE USAN PARA ELABORAR ALIMENTOS CURADOS PARA EL GANADO, CONOCIDO HENO. ESTA ACTIVIDAD NO ESTA SUJETA A VENTAS DE CONFORMIDAD CON EL OFICIO DR-241-2012."
+                            },
+                            {
+                                "code": "154101",
+                                "name": "VENTA DE PAN Y OTROS PRODUCTOS SIMILARES GRAVADOS CON IVA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRODUCCION Y VENTA DE PANES Y CEREALES NO INCLUIDOS EN LA NUEVA CANASTA BASICA (DECRETO NO. 37132-H)"
+                            },
+                            {
+                                "code": "154102",
+                                "name": "PASTELERIA, REPOSTERIA O AMBAS",
+                                "description": "INCLUYASE EN ESTA CLASE LA ELABORACION ARTESANAL O INDUSTRIAL DE PASTELES O REPOSTERIAS TALES COMO: PASTELES DE FRUTAS Y/O SEMILLAS, QUEQUES SECOS O DECORADOS,BIZCOCHOS, GALLETAS, PANES O BOCADILLOS DULCES O SALADOS, TRES LECHES, OREJAS,PRUSIANOS, CHEESECAKE, ENCHILADAS, ENTRE OTROS."
+                            },
+                            {
+                                "code": "154104",
+                                "name": "ELABORACION Y VENTA DE PRODUCTOS DE PANADERIA INCLUIDOS EN CANASTA BASICA",
+                                "description": "INCLUYE LA ELABORACION ARTESANAL O INDUSTRIAL DE PRODUCTOS INCLUIDOS EN LA NUEVA CANASTA BASICA (DECRETO NO. 37132-H)."
+                            },
+                            {
+                                "code": "154201",
+                                "name": "ELABORACION Y VENTA DE AZUCAR Y PRODUCTOS DERIVADOS DE LA CANA DE AZUCAR",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRODUCCION DE AZUCAR DE CANA Y DE REMOLACHA: AZUCAR DE CANA EN BRUTO, AZUCAR REFINADA DE CANA Y DE REMOLACHA, JARABES DE AZUCAR DE REMOLACHA Y DE CANA, OTROS AZUCARES Y JARABES DE AZUCAR (AZUCAR DE ARCE, AZUCAR INVERTIDO, AZUCAR DE PALMA). PRODUCCION DE MELAZAS. BAGAZO HIDROLIZADO."
+                            },
+                            {
+                                "code": "154202",
+                                "name": "ELABORACION DE PRODUCTOS DERIVADOS DE LA CAÑA DE AZUCAR",
+                                "description": "ESTA CLASE INCLUYE LA ELABORACION DE PRODUCTOS DERIVADOS DE LA CAÑA DE AZUCAR TALES COMO JUGO DE CAÑA, JARABE, SIROPE Y TAPAS DE DULCE LOS CUALES SE ENCUENTRAN EXENTOS DEL IMPUESTO SOBRE LAS VENTAS, DE ACUERDO CON EL ARTICULO 5 DE SU REGLAMENTO."
+                            },
+                            {
+                                "code": "154301",
+                                "name": "ELABORACION DE CACAO",
+                                "description": "ESTA CLASE ABARCA LA ELABORACION DEL CACAO EN FORMA DE PASTA, POLVO Y BLOQUES. ASI COM LA ELABORACION DE ELABORACION DE MANTECA, GRASA Y ACEITE DE CACAO."
+                            },
+                            {
+                                "code": "154302",
+                                "name": "ELABORACION DE CHOCOLATE",
+                                "description": "ELABORACION DE CHOCOLATE Y PRODUCTOS PREPARADOS CON CHOCOLATE."
+                            },
+                            {
+                                "code": "154303",
+                                "name": "ELABORACION DE DULCES, GOLOSINAS Y CONSERVAS EN AZUCAR",
+                                "description": "ESTA CLASE INCLUYE LA ELABORACION DE TODO TIPO DE DULCES, CONFITES, GOLOSINAS Y CONSERVAS EN AZUCAR DE NUECES, CORTEZAS DE FRUTAS Y OTRAS PARTSE DE PLANTAS."
+                            },
+                            {
+                                "code": "154401",
+                                "name": "ELABORACION DE MACARRONES, FIDEOS, ALCUZCUZ Y PRODUCTOS FARINACEOS SIMILARES",
+                                "description": "ESTA CLASE INCLUYE LA ELABORACION DE PRODUCTOS FARINACEOS SIN COCER: ESPAGUETIS, MACARRONES, FIDEOS Y OTROS PRODUCTOS DE PASTA PARA PREPARAR LASAÑA, CANELONES, RAVIOLES, ETC. ELABORACION DE ALCUZCUZ. ELABORACION DE PASTAS RELLENAS, COCIDAS O SIN COCER. ELABORACION DE OTROS PRODUCTOS DE PASTA COCIDOS. ELABORACION DE PRODUCTOS DE PASTA CONSERVADOS EN RECIPIENTES HERMETICOS O POR CONGELACION."
+                            },
+                            {
+                                "code": "154402",
+                                "name": "ELABORACION DE MACARRONES, FIDEOS, ALCUZCUZ Y PRODUCTOS FARINACEOS SIMILARES INCLUIDOS EN CANASTA BASICA",
+                                "description": "ELABORACION DE MACARRONES, FIDEOS, ALCUZCUZ Y PRODUCTOS FARINACEOS SIMILARES INCLUIDOS EN CANASTA BASICA"
+                            },
+                            {
+                                "code": "154902",
+                                "name": "FABRICACION DE PRODUCTOS ALIMENTICIOS PREPARADOS N.C.P. (NOCONTEMPLADOS EN OTRA PARTE)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PREPARACION DE ALIMENTOS NO CONTEMPLADOS EN OTRA CLASIFICACION: ENTRE ELLOS, SOPAS DE CARNE, PESCADO, POLLO, MOLUSCOS, CRUSTACEOS, ETC, EN ESTADO SOLIDO (PASTA), LIQUIDO, CONGELADOS Y EN TABLETAS. ASIMISMO, LA ELABORACION DE ESPECIAS, SALSAS, MOSTAZAS Y CONDIMENTOS. EN ESTA CLASE SE INCLUYE ADEMAS, EL TOSTADO, LA MOLIENDA, EL DESCAFEINADO Y EL ENVASE DE CAFE. ELABORACION DE SUCEDANEOS DE CAFE QUE CONTIENEN CAFE. ELABORACION DE EXTRACTOS, ESENCIAS DE CONCENTRADOS DE CAFE Y PREPARADOS A BASE DE DICHO PRODUCTO. TOSTADO DE ACHICORIA Y ELABORACION DE OTROS SUCEDANEOS DEL CAFE TORRADO Y DE SUS ESENCIAS, EXTRACTOS Y CONCENTRADOS. ELABORACION DE EXTRACTOS, ESENCIAS Y CONCENTRADOS DE TE YYERBA MATE, O PREPARADOS A BASE DE DICHOS EXTRACTOS, ESENCIAS Y CONCENTRADOS, O A BASE DE TE Y YERBA MATE.PRODUCCION DE HUEVOS EN POLVO O CONGELADOS, CLARAS DE HUEVO, YEMAS DE HUEVO, HUEVOS RECONSTRUIDOS Y HUEVOS EN CONSERVA. PRODUCCION DE ALIMENTOS PARA LACTANTES Y PARA INVALIDOS CON INGREDIENTES HOMOGE TNEIZADOS, INCLUSO EXTRACTOS DE CARNE, PESCADO, FRUTAS, HORTALIZAS, LECHE Y MAL TA. TOSTADO DE NUECES Y ELABORACION DE ALIMENTOS Y PASTAS A BASE DE NUECES."
+                            },
+                            {
+                                "code": "154903",
+                                "name": "FABRICACION DE HIELO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE HIELO EN CUALQUIER TIPO DE PRESENTA- CION."
+                            },
+                            {
+                                "code": "154904",
+                                "name": "FABRICACION DE CAFE (EXCEPTO EL ENVASADO, ENLATADO, SOLUBLEY EL DESCAFEINADO)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE CAFE. EXCEPTO EL CAFE ENVASADO O ENLATADO, SOLUBLE Y EL DESCAFEINADO. EL REGLAMENTO DE VENTAS DEFINE ENVASADO O ENLATADO, EL PRODUCTO CONTENIDO EN RECIPIENTE CERRADO DE HOJALATA O VIDRIO. EN CUYO CASO ESTARIA GRAVADO CON EL IMPUESTO SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "154905",
+                                "name": "ELABORACION DE PRODUCTOS DE MAIZ EXENTOS DE VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION TORTILLAS DE MAIZ Y DE HARINA DE TRIGO AMBAS SIN FREIR, ASI COMO LOS TAMALES DE MAIZ, LOS BIZCOCHOS, ETC. ESTAS MERCANCIAS ESTAN EXENTAS DE VENTAS DE ACUERDO AL ART. 5 DEL REGLAMENTO A LA LEY DEL IMPUESTO GENERAL SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "154908",
+                                "name": "ELABORACION DE PRODUCTOS DE MAIZ GRAVADOS CON VENTAS",
+                                "description": "ESTA CLASE INCLUYE LA ELABORACION DE PRODUCTOS DE MAIZ, TALES COMO: EMPANADAS DE MAIZ AMARILLO (SOLO FREIR) Y EMPANADAS DE HOJALDRE (SOLO HORNEAR) CON VARIEDAD DE RELLENOS, PRECOCIDAS Y CONGELADAS, LISTAS PARA CONSUMIR, ROSQUILLAS, CHORREADAS, TAMAL ASADO; ETC."
+                            },
+                            {
+                                "code": "155101",
+                                "name": "ELABORAC. RECTIFICAC MEZCLA BEBIDAS ALCOHOLICAS/PROD. DE ALCOHOL ETILICO (SUSTAN FERMENTADAS)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION DE BEBIDAS ALCOHOLICAS DESTILADAS, TALE S COMO WHISKY, CONAC, GINEBRA, LICORES Y OTRAS BEBIDAS ALCOHOLICAS QUE CONTIENEN ALCOHOL ETILICO DESTILADO. ADEMAS, LA PRODUCCION DE ALCOHOL ETILICO BASADOS EN LA FERMENTACION DE SUSTANCIAS VEGETALES Y LA DESTILACION DE LICORES, ASI COMO LA PRODUCCION DE AGUARDIENTES NEUTROS."
+                            },
+                            {
+                                "code": "155103",
+                                "name": "ELABORACION DE BEBIDAS CON PORCENTAJE DE ALCOHOL POR VOLUMEN MENOR AL 15%.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION DE BEBIDAS CUYA CONCENTRACION DE ALCOHOL ABSOLUTO , POR VOLUMEN CONTENIDO EN CUALQUIER BEBIDA DE PRODUCCION NACIONAL O IMPORTADA, INDISTINTAMENTE DE SU PRESENTACION, SEA MENOR A LA ESTABLECIDA EN LA LEY 7972 DEL 22/12/1999, LEY DE IMPUESTOS SOBRE CIGARRILLOS Y LICORES PARA PLAN DE PROTECCION SOCIAL; (POR EJEMPLO EL ROMPOPE, ALGUNAS CERVEZAS, ALGUNOS REFRESCOS, ALGUNOS ZUMOS, SIDRAS, ENTRE OTROS)."
+                            },
+                            {
+                                "code": "155301",
+                                "name": "ELABORACION DE BEBIDAS MALTEADAS Y DE MALTA NO ARTESANALES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION DE BEBIDAS MALTEADAS, COMO LAS CERVEZAS CORRIENTES, PALIDA, NEGRA Y FUERTE; ASI COMO LA ELABORACION DE MALTA. ESTA CLASE NO INCLUYE LA FABRICACION ARTESANAL."
+                            },
+                            {
+                                "code": "155302",
+                                "name": "ELABORACION ARTESANAL DE BEBIDAS MALTEADAS Y DE MALTA.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION ARTESANAL DE BEBIDAS MALTEADAS, COMO LAS CERVEZAS CORRIENTES, PALIDA, NEGRA Y FUERTE; ASI COMO LA ELABORACION DE MALTA. ESTA ACTIVIDAD NO SE ENCUENTRA AFECTA AL IMPUESTO SELECTIVO DE CONSUMO DE ACUERDO AL ART 8 INCISO B) DE LA LEY DEL IMPUESTO SELECTIVO DE CONSUMO."
+                            },
+                            {
+                                "code": "155403",
+                                "name": "ELABORACION DE BEBIDAS NO ALCOHOLICAS / GASEOSAS / AGUA MINERAL Y DE MANANTIAL",
+                                "description": "ESTA CLASE ABARCA LA ELABORACION DE LAS BEBIDAS NO ALCOHOLICAS CONOCIDAS GENERALMENTE CON EL NOMBRE DE BEBIDAS REFRESCANTES, REFRESCOS GASEOSOS. ELABORACION DE BEBIDAS ADEREZADAS CON JUGOS DE FRUTAS, JARABES Y OTRAS SUSTANCIAS. ASI COMO LA PRODUCCION O EMBOTELLADO EN LA FUENTE, DE AGUAS MINERALES Y DE MANANTIAL"
+                            },
+                            {
+                                "code": "155404",
+                                "name": "ELABORACION DE CONCENTRADO PARA BEBIDAS NATURALES Y GASEOSAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION DE CONCENTRADO QUE SE UTILIZA COMO MATERIA PRIMA EN LA ELABORACION DE BEBIDAS NATURALES Y GASEOSAS. SEGUN EL OFICIO DGT NO.55 DEL 23-01-2002, NO SE ENCUENTRA GRAVADA CON EL IMPUESTO ESPECIFICO DE BEBIDAS SIN ALCOHOL."
+                            },
+                            {
+                                "code": "160001",
+                                "name": "ELABORACION DE PRODUCTOS DE TABACO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION O MANUFACTURA DE PRODUCTOS DE TABACO, T ALES COMO: CIGARRITOS, PURITOS, CIGARROS, PUROS, INCLUSO DESPUNTADOS, CIGARRILLOS, PICADURA PARA CIGARROS Y CIGARRILLOS, TABACO PARA MASCAR, TABACO DE PIPA, RAPE, CUALQUIER SUCEDANEO DEL TABACO. ELABORACION DE TABACO HOMOGENEIZADO O RECONSTITUIDO, QUE SE AGLOMERA DE ESCAMILLAS PROCEDENTES DE HOJAS, DE RESIDUOS O DE POLVO DE TABACO. SE INCLUYE TAMBIEN EL DESPEDUNCULADO Y SECADO DE LAS HOJAS DE TABACO"
+                            },
+                            {
+                                "code": "171101",
+                                "name": "FABRICACION DE TODO TIPO DE TELAS Y/O HILOS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS OPERACIONES DE PREPARACION DE FIBRAS TEXTILES, TALES COMO DEVANADO Y LAVADO DE LA SEDA; DESENGRASE, CARBONIZACION Y TEÑIDO DEL VELLON (MECHA, LANA), CARDADO (SUAVIZADO O ALISADO) Y PEINADO DE ESAS FIBRAS Y DE LAS DE YUTE, SISAL, LINO, RAMIO, CAÑAMO DE MANILA, COCO Y OTRAS FIBRAS VEGETALES O ANIMALES, ASI COMO DE TODOS LOS TIPOS DE FIBRAS TEXTILES MANUFACTURADAS. SE INCLUYE TAMBIEN, LA PRODUCCION DE FIBRAS A PARTIR DE HILACHAS (HEBRAS, HILOS) , FABRICACION DE HILADOS E HILOS PARA TEJEDURA Y COSTURA DE DISTINTOS TIPOS DE MATERIAL TEXTIL, PARA VENTA AL POR MENOR Y AL POR MAYOR Y PARA PROCESAMIENTO POSTERIOR. TAMBIEN SE INCLUYE LA FABRICACION DE HILADOS DE PAPEL. TEJEDURA, FABRICACION DE TEJIDOS ANCHOS DE TODOS LOS MATERIALES MENCIONADOS ANTERIORMENTE, INCLUSO SUS MEZCLAS. TAMBIEN SE INCLUYEN LOS TEJIDOS DE FIBRA DE VIDRIO Y LA FABRICACION DE FIBRAS ESPECIALES, COMO TEJIDOS ATERCIOPELADOS Y DE FELPILLA, TEJIDOS DE RIZO PARA TOALLAS, GASA, ETC. INCLUYANSE ADEMAS, LAS OPERACIONES DE ACABADO, TALES COMO BLANQUEO, TEÑIDO, CALANDRADO, PERCHADO, ENCOGIMIENTO Y ESTAMPADO."
+                            },
+                            {
+                                "code": "171201",
+                                "name": "MAQUILA DE PRODUCTOS TEXTILES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ACABADO, MEDIANTE PROCESOS TALES COMO BLANQUEO, TEÑIDO, CALANDRADO, PERCHADO, ENCOGIMIENTO Y ESTAMPADO DE TEJIDOS ANCHOS DE ALGODON, LANA, LANA PEINADA O SEDA, INCLUIDOS LOS FABRICADOS A PARTIR DE MEZCLAS O DE HILADOS SINTETICOS O ARTIFICIALES FABRICACION DE OTROS TEJIDOS ANCHOS DE LINO, RAMIO, CAÑAMO, YUTE Y FIBRAS BLANDAS Y DE HILADOS ESPECIALES SE INCLUYEN TAMBIEN LA FABRICACION DE TEJIDOS ATERCIOPELADOS Y DE FELPILLA, TEJIDOS DE RIZO PARA TOALLAS, GASA, ETC, FABRICACION DE TEJIDOS DE FIBRAS DE VIDRIO FABRICACION DE TEJIDOS DE CARBONO Y DE ARAMIDOS FABRICACION DE TEJIDOS QUE IMITAN LAS PIELES FINAS"
+                            },
+                            {
+                                "code": "171202",
+                                "name": "HIDROFUGADO/IMPERMEABILIZADO",
+                                "description": "CONSISTE EN UN TRATAMIENTO PARA IMPERMEABILIZAR (HIDROFUGAR) ROPA, CALZADO, O CUALQUIER TIPO DE TEXTILES. ES UN PROCESO EN EL QUE AGREGA UNA SUSTANCIA"
+                            },
+                            {
+                                "code": "172101",
+                                "name": "FABRICACION DE ARTICULOS CONFECCIONADOS DE MATERIALES TEXTILES, EXEPTO PRENDAS DE VESTIR",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION, CON TEJIDOS NO PRODUCIDOS EN LA MISMA UNIDAD, DE ARTICULOS CONFECCIONADOS CON CUALQUIER TIPO DE MATERIAL TEXTIL, INCLUSO TEJIDOS DE PUNTO Y GANCHILLO. SE INCLUYE LA FABRICACION DE ARTICULOS TALES COMO: FRAZADAS, MANTAS DE VIAJE Y TODA CLASE DE ROPA DE CAMA, PAÑOS DE MESA Y OTROS TIPOS DE ROPA BLANCA. ACCESORIOS PARA EL HOGAR, COMO CORTINAS, CENEFAS, VISILLOS Y SOBRECAMAS. ALGUNOS ARTICULOS CON RELLENO, COMO ACOLCHADOS, EDREDONES, COJINES, PUFES, ALMOHADAS Y SACOS PARA DORMIR. ENCERADOS, TIENDAS DE CAMPAÑA, ARTICULOS PARA ACAMPAR, VELAS, TOLDOS DE PROTECCION CONTRA EL SOL, FUNDAS PARA AUTOMOVILES, MAQUINAS Y MUEBLES. BANDERAS, GALLARDETES Y ESTANDARTES. PAÑOS PARA DESEMPOLVAR, PAÑOS DE COCINA, CHALECOS SALVAVIDAS, ETC. PARACAIDAS. LA FABRICACION DE TAPICES TEJIDOS A MANO SE INCLUYE EN ESTA CLASE. TAMBIEN SE INCLUYE LA FABRICACION DE TEJIDOS PARA MANTAS ELECTRICAS. EXCLUSION: CUANDO LOS ARTICULOS ABARCADOS POR ESTA CLASE SE FABRICAN EN LA MISMA UNIDAD QUE PRODUCE LOS TEJIDOS, LA ACTIVIDAD SE CONSIDERA UNA ACTIVIDADAUXILIAR DE LA TEJEDURA, O SEA, DE LA CLASE 1711 (PREPARACION E HILATURA DE FIBRAS TEXTILES; TEJEDURA DE PRODUCTOS TEXTILES)"
+                            },
+                            {
+                                "code": "172103",
+                                "name": "DISEÑO ARTISTICO PARA COSTURA (MOLDES)",
+                                "description": "SE INCLUYE EN ESTA ACTIVIDAD EL DISEÑO DE PRENDAS DE VESTIR DE CUALQUIER TIPO, EN DIFERENTES MOLDES A CAMBIO DE UNA RETRIBUCION ECONOMICA."
+                            },
+                            {
+                                "code": "172201",
+                                "name": "FABRICACION DE TAPICES Y ALFOMBRAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE PRODUCTOS TEXTILES, EN PIEZAS O A LA MEDIDA, PARA EL CUBRIMIENTO DE PISOS, TALES COMO: TAPICES, ALFOMBRAS Y ESTERAS PRODUCIDOS MEDIANTE EL TEJIDO, AFELPADO, TRENZADO, TUNDIDO, PUNZADO, ETC., DE HILADOS DE LANA, ALGODON, FIBRAS MANUFACTURADAS, YUTE, FIBRA DE COCO (BONOTE), SISAL Y FIBRAS SIMILARES."
+                            },
+                            {
+                                "code": "172301",
+                                "name": "FABRICACION DE CUERDAS, CORDELES,BRAMANTES Y REDES",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE CUERDAS, CORDELES, CORDONCILLOS E HILOS DE FIBRAS TEXTILES, ESTEN O NO IMPREGNADOS, REVESTIDOS, CUBIERTOS O FORRADOS CON CAUCHO O PLASTICO. TAMBIEN SE INCLUYE LA FABRICACION DE REDES DE CUERDA Y REDES DE DEPORTE, TALES COMO: REDES DE PESCA, DEFENSAS PARA BORDOS, COJINES PARA DESCARGA, ESLINGAS, CUERDAS Y MAROMAS CON AROS METALICOS."
+                            },
+                            {
+                                "code": "172302",
+                                "name": "FABRICACION DE HILOS Y CUERDAS PARA USO AGRICOLA Y PESCA",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE HILOS DE NYLON PARA SARAN (TIRAS CRUDAS O TEÑIDAS PARA TEJIDOS DE USO AGRICOLA) Y REDES DE PESCA ASI COMO EL MECATE DE NYLON POLIPROPILENO DE MAS DE 18 MM Y CUERDAS PLASTICAS PARA PESCA TIPO MONOFILAMENTO DE TODO DIAMETRO. TAMBIEN INCLUYE EL CORDEL DE FIBRA DE COCO PARA APUNTALAMIENTO DE CULTIVOS AGRICOLAS."
+                            },
+                            {
+                                "code": "172902",
+                                "name": "SERVICIO DE BORDADO A MANO O A MAQUINA",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE BORDADO A MANO O MAQUINA PRESTADO A CAMBIO DE UNA RETRIBUCION ECONOMICA."
+                            },
+                            {
+                                "code": "173001",
+                                "name": "FABRICACION DE TEJDOS Y ARTICULOS DE PUNTO Y GANCHILLO",
+                                "description": "ESTA CLASE ABARCA LAS ACTIVIDADES DE ELABORACION A MANO, O MEDIANTE MAQUINAS DE DISTINTA COMPLEJIDAD, DE ARTICULOS DE PUNTO Y GANCHILLO. POR CONSIGUIENTE, INCLUYE LA FABRICACION DE TEJIDOS DE ROPA DE PUNTO Y GANCHILLO. SE INCLUYE LA PRODUCCION DE TEJIDOS DE PUNTO PLANO O CIRCULAR, CON O SIN HILADOS ELASTOMERICOS O HILOS DE CAUCHO, ASI COMO LA DE TEJIDOS ATERCIOPELADOS Y RIZO Y LOS ARTICULOS TALES COMO JERSEYS, SUETERES, CHALECOS, CAMISETAS DE TODO TIPO, PANTIMEDIAS, LEOTARDOS, MEDIAS Y ARTICULOS SIMILARES."
+                            },
+                            {
+                                "code": "181001",
+                                "name": "SERVICIOS DE COSTURA Y SASTRERIA (COSTURERAS Y SASTRES)",
+                                "description": "SE REFIERE A LA CONFECCION DE PRENDAS DE VESTIR, DONDE EL CLIENTE SUMINISTRA LA TELA. NO EXISTE VENTA DE PRODUCTOS, SOLO LA PRESTACION DEL SERVICIO. ADEMAS INCLUYASE LA ACTIVIDAD DE CUALQUIER ARREGLO EN LAS PRENDAS DE VESTIR."
+                            },
+                            {
+                                "code": "181002",
+                                "name": "FABRICACION DE PRENDAS DE VESTIR (ROPA DE TODO TIPO)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE PRENDAS DE VESTIR ES DECIR, ROPA DE TODO TIPO PARA HOMBRES, NIÑOS, BEBES, ROPA INTERIOR Y DE DORMIR, ROPA DE DIARIO Y DE ETIQUETA, ROPA DE TRABAJO Y PARA PRACTICA DE DEPORTES, DE SOMBREROS Y GORROS, DE TODO TIPO DE ACCESORIOS DE VESTIR, TALES COMO GUANTES, CINTURONES, CHALES, CORBATAS, CORBATINES, REDECILLAS PARA EL CABELLO, ETC. TAMBIEN SE INCLUYE LA FABRICACION DE PARTES DE ESTOS PRODUCTOS."
+                            },
+                            {
+                                "code": "182001",
+                                "name": "ADOBO Y TEÑIDO DE PIELES; FABRICACION DE ARTICULOS DE PIEL NATURAL O ARTIFICIAL",
+                                "description": "ESTA CLASE ABARCA LA PRODUCCION DE PIELES FINAS ADOBADAS Y DE CUEROS Y PIELES CURTIDOS Y ADOBADOS SIN DEPILAR Y LA FABRICACION DE ARTICULOS DE PIELES FINAS O DE CUEROS SIN DEPILAR. LA PRODUCCION DE PIELES FINAS INCLUYE OPERACIONES TALES COMO DESCARNADURA, ENGRASE, CURTIDO, BLANQUEO, DEPILACION Y DESPINZADO PARA PONER LAS PIELES EN CONDICIONES DE COMERCIALIZACION. LOS ARTICULOS MAS IMPORTANTES QUE SE CONFECCIONAN CON PIELES FINAS Y OTRAS PIELES SIN DEPILAR SON PRENDAS DE VESTIR Y ACCESORIOS, CONJUNTOS DE PELETERIA, TALES COMO PLANCHAS, CUADRADOS, TIRAS, ETC."
+                            },
+                            {
+                                "code": "191101",
+                                "name": "FABRICACION DE MALETAS, BOLSOS DE MANO Y ARTICULOS SIMILARES",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE MALETAS, BOLSOS DE MANO, BILLETERAS, CINTURONES Y ARTICULOS SIMILARES. ESTOS PUEDEN SER CONFECCIONADOS EN CUERO O CON OTROS MATERIALES (GENERALMENTE CUEROS DE IMITACION), COMO PLASTICO, MATERIAS TEXTILES, FIBRAS VULCANIZADAS Y CARTON. INCLUYE ARTICULOS DE TALABARTERIA Y GUARNICIONERIA"
+                            },
+                            {
+                                "code": "192001",
+                                "name": "FABRICACION DE TODO TIPO DE ZAPATOS EXEPTO EL ORTOPEDICO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION INDUSTRIAL O ARTESANAL DE CALZADO PARA TODO USO Y DE CUALQUIER MATERIAL TALES COMO CUERO, CAUCHO, PLASTICO, MATERIALES TEXTILES, MADERA, ETC. Y MEDIANTE CUALQUIER PROCESO: CORTE Y COSTURA, MOLDEADO, ENGOMADO, ETC. INCLUYE LA FABRICACION DE BOTINES, POLAINAS Y ARTICULOS SIMILARES. COMPRENDE ADEMAS SUELAS Y PLANTILLAS DE TODO TIPO DE MATERIAL. LA FABRICACION DE CALZADO ORTOPEDICO SE INCLUYE EN EL CODIGO 331103."
+                            },
+                            {
+                                "code": "201002",
+                                "name": "ASERRADO Y ACEPILLADURA DE MADERA",
+                                "description": "ESTA CLASE INCLUYE LAS SIGUIENTES ACTIVIDADES: ASERRADO, ACEPILLADURA Y MAQUINADO DE MADERA; TABLEADO, DESCORTEZADO Y DESMENUZAMIENTO DE TRONCOS; FABRICACIO DE TRAVIESAS DE MADERA (DURMIENTES) PARA VIAS FERREAS; FABRICACION DE TABLETAS PARA LA ENNSAMBLDE LA MADERAADURA DE PISOS DE MADERA; FABRICACION DE LANA DE MADERA, HARINA DE MADERA Y PARTICULAS DE MADERA; SECADO DE MADERA; IMPREGNACION Y TRATAMIENTO QUIMICO DE LA MADERA CON PRESERVATIVOS Y OTRAS SUSTANCIAS"
+                            },
+                            {
+                                "code": "202101",
+                                "name": "FABRICACION DE HOJAS DE MADERA PARA ENCHAPADO Y TABLEROS COMO PLYWOOD, DURPANEL Y SIMILARES",
+                                "description": "ENTEMENTE DELGADAS PARA PRODUCIR MADERA ENCHAPADA Y TABLEROS CONTRACHAPADOS, Y PARA OTROS FINES. LAS HOJAS PUEDEN OBTENERSE MEDIANTE ASERRADO, REBANADO Y DESENROLLO (MONDADURA) Y PUEDEN ESTAR ALISADAS, TEÑIDAS, BAÑADAS E IMPREGNADAS, O REFORZADAS CON PAPEL O TELA, O CORTADAS EN FIGURAS TAMBIEN SE INCLUYEN LA FABRICACION DE TABLEROS CONTRACHAPADOS, TABLEROS DE MADERA ENCHAPADA Y OTROS PRODUCTOS SIMILARES DE MADERA LAMINADA, Y LA FABRICACION DE TABLEROS DE PARTICULAS Y DE FIBRA. LA FABRICACION DE ESTOS PRODUCTOS SE CARACTERIZA POR LA UTILIZACION DE PRENSAS DE ALTA PRESION Y COLAS, EN COMBINACION O POR SEPARADO. LA PRODUCCION DE MADERA COMPACTADA TAMBIEN SE INCLUYE EN ESTA CLASE. RA COMPACTADA TAMBIEN SE INCLUYE EN ESTA CLASE."
+                            },
+                            {
+                                "code": "202201",
+                                "name": "FABRICACION DE PARTES Y PIEZAS DE CARPINTERIA PARA EDIFICIOS Y CONSTRUCCIONES",
+                                "description": ".N ESTA CLASE SE INCLUYE PARTES Y PIEZAS DE CARPINTERIA,INCLUSO PUERTAS, VENTA-NAS, CONTRAVENTANAS Y SUS MARCOS, TENGAN O NO HERRAJES, COMO VISAGRAS, CERRADU-RAS, ETC. ESCALERAS, PORTICOS, BARANDALES, ETC, BLOQUES, LISTONES, ETC, ENSAM-BLADOS EN TABLEROS PARA PISOS DE PARQUE Y ARMARIOS EMPOTRADOS. ASIMISMO, SE INCLUYEN OTROS PRODUCTOS DE MADERA TALES COMO HERRAMIENTAS Y MANGOS DE CEPILLOS Y ESCOBAS, PERCHAS PARA ROPA, MARQUETERIA, JOYEROS, UTENSILIOS DE COCINA Y PARA USODOMESTICO, PERSIANAS DE MADERA. INSTALACION DE PIEZAS DE CARPINTERIA DE FABRICACION PROPIA.ADEMAS SE INCLUYE LA INSTALACION DE PUERTAS, VENTANAS, CONTRAVENTANASY SUS MARCOS EN ALUMINIO, CUYOS MATERIALES ESTAN AFECTOS AL IMPUESTO SOBRE LAS VENTAS"
+                            },
+                            {
+                                "code": "202301",
+                                "name": "FABRICACION DE TARIMAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE TARIMAS DE MADERA PARA TODO USO."
+                            },
+                            {
+                                "code": "202902",
+                                "name": "FABRICACION Y/O VENTA DE ATAUDES (CAJAS MORTUORIAS, FERETROS).",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE ATAUDES DE MADERA Y OTROS MATERIALES."
+                            },
+                            {
+                                "code": "210101",
+                                "name": "FABRICACION DE PAPEL Y CARTON Y ENVASES DE PAPEL Y CARTON",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE PASTA DE MADERA BALNQUEADA, SEMIBLANQUEADA O SIN BLANQUEAR MEDIANTE PROCESOS MECANICOS, QUIMICOS (CON O SIN DISOLUCION) O SEMIQUIMICOS. FABRICACION DE PASTA DE DESECHOS DE PAPEL. FABRICACION DEPAPEL Y CARTON PARA SU ULTERIOR ELABORACION INDUSTRIAL. ELABORACION ULTERIOR DE PAPEL Y CARTON: REVESTIMIENTO, RECUBRIMIENTO E IMPREGNACION DE PAPEL Y CARTON; PAPEL RIZADO O PLISADO; LAMINADOS DE PAPEL O CARTON. FABRICACION DE PAPEL FABRICADO A MANO. FABRICACION DE PAPEL DE PERIODICO Y DE OTROS PAPELES PARA IMPRIMIR Y ESCRIBIR. FABRICACION DE GUATA DE CELULOSA Y TIRAS DE FIBRAS DE CELULOSA. FABRICACION DE PAPEL CARBON O PAPEL DE ESTENCIL EN ROLLOS U HOJAS GRANDES. FABRICACION DEPAPEL Y CARTON ONDULADO. FABRICACION DE ENVASES DE PAPEL O CARTON ONDULADO, PLEGABLES DE CARTON, CARTON RIGIDO, OTROS ENVASES DE PAPEL O CARTON. FABRICACION DE SACOS Y BOLSAS DE PAPEL. FABRICACION DE ARCHIVADORES DE OFICINA Y SIMILARES."
+                            },
+                            {
+                                "code": "210201",
+                                "name": "FABRICACION DE OTROS ARTICULOS DE PAPEL Y CARTON",
+                                "description": "EN ESTA CLASE SE INCLUYE: FABRICACION DE PRODUCTOS DE PAPEL Y GUATA DE CELULOSA DE USO DOMESTICO Y PARA LA HIGIENE PERSONAL: PAÑUELITOS FACIALES, PAÑUELOS, TOALLAS, SERVILLETAS, PAPEL HIGIENICO, TOALLAS HIGIENICAS Y TAMPONES, PAÑALES Y FORROS DE PAÑALES PARA BEBES, VASOS, PLATOS Y BANDEJAS. FABRICACION DE GUATA DE MATERIALES TEXTILES Y ARTICULOS DE GUATA: TOALLAS HIGIENICAS, TAMPONES, ETC. FABRICACION DE PAPEL PARA IMPRIMIR Y PARA ESCRIBIR LISTO PARA USAR. FABRICACION DE PAPEL PARA IMPRESORA LISTO PARA USAR. FABRICACION DE PAPEL AUTOCOPIA LISTO PARA USAR. FABRICACION DE PAPEL PARA COPIAR O TRANSFERIR Y PAPEL CARBON LISTO PARA USAR. FABRICACION NDE SOBRES Y AEROGRAMAS. FABRICACION DE REGISTROS, LIBROS DE CONTABILIDAD, ENCUADERNADORES, ALBUMES Y ARTICULOS DE PAPELERIA SIMILARES, ENTRE OTROS."
+                            },
+                            {
+                                "code": "221101",
+                                "name": "EDICION DE LIBROS DE TEXTOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EDICION DE LIBROS EN GENERAL, INCLUSO LIBROS DE TEXTOS EDUCATIVOS, DICCIONARIOS, ENCICLOPEDIAS, ETC.; ABARCA LA ADQUISICION DE DERECHOS DE AUTOR SOBRE CONTENIDOS (PRODUCTOS DE INFORMACION) Y LA DIFUSION DE ESOS CONTENIDOS ENTRE EL PUBLICO EN GENERAL REPRODUCIENDOLOS Y DISTRIBUYENDOLOS DIRECTAMENTE U ORGANIZANDO SU REPRODUCCION Y DISTRIBUCION EN DIVERSAS FORMAS"
+                            },
+                            {
+                                "code": "221201",
+                                "name": "EDICION DE PERIODICOS, REVISTAS Y OTRAS PUBLICACIONES PERIODICAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EDICION DE PERIODICOS, REVISTAS, Y PUBLICACIONES PERIODICAS DE CONTENIDO TECNICO Y GENERAL, REVISTAS DE INDUSTRIAS, HUMORISTICAS,Y DE CUALQUIER OTRO TIPO. LOS CONTRIBUYENTES INCLUIDOS EN ESTA CLASE PUEDEN OPTAR POR LA INSCRIPCION COMO DECLARANTES EN EL IMPUESTO SOBRE LAS VENTAS A EFECTOS DE QUE SE LES RECONOZCA LOS CREDITOS FISCALES."
+                            },
+                            {
+                                "code": "221901",
+                                "name": "ARTES GRAFICAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION DE TODO TIPO DE ELEMENTOS VISUALES FUNDAMENTALMENTE A TECNICAS DE GRABADO Y_DIBUJO, AUNQUE SUELE RESTRINGIRSE EL TERMINO A LAS TECNICAS RELACIONADAS CON LA IMPRENTA. ASIMISMO, ES UN PROCESO ARTISTICO DE LA CREACION DE UN DISEÑO USANDO UN MEDIO Y LA TRANSFERENCIA DE LA IMAGEN HACIA UN SUSTRATO (COMO EL PAPEL), CREANDO ASI UNA EXPRESION ARTISTICA."
+                            },
+                            {
+                                "code": "222102",
+                                "name": "TIPOGRAFIA Y/O LITOGRAFIA (IMPRENTA)",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ACTIVIDADES DE IMPRESION REALIZADAS POR LAS IMPRENTAS TALES COMO PERIODICOS, REVISTAS, MAPAS, CARTELES, CATALOGOS, SELLOS POSTALES,PAPEL MONEDA, FORMULARIOS COMERCIALES, ENTRE OTROS EL CUAL SE ENCUENTRA AFECTOAL IMPUESTO SOBRE LAS VENTAS DE ACUERDO CON EL ART1 INC.P DE LA LEY."
+                            },
+                            {
+                                "code": "222104",
+                                "name": "IMPRESION DIGITAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA IMPRESION PARA TERCEROS, A CAMBIO DE UNA RETRIBUCIONO POR CONTRATA, ASI COMO TAMBIEN LA REPRODUCCION DE MATERIAL POR MEDIO DE EQUIPOESPECIAL PARA ACABADO DIGITAL."
+                            },
+                            {
+                                "code": "222105",
+                                "name": "SERIGRAFIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ACTIVIDADES DE SERIGRAFIA DENTRO DE LA CUALES SE DAEL ESTAMPADO MEDIANTE ESTARCIDO A TRAVES DE UN TEJIDO , EN PRINCIPIO DE SEDA, POR LA QUE UN RODILLO HACE PASAR LA TINTA O PINTURA. SE IMPRIME SOBRE CUALQUIER MATERIAL COMO PAPEL, TELA, METAL, CERAMICA, ETC."
+                            },
+                            {
+                                "code": "223001",
+                                "name": "REPRODUCCION DE GRABACIONES",
+                                "description": "EN ESTA CLASE SE INCLUYEN: LA REPRODUCCION A PARTIR DE COPIAS MATRICES DE DISCOS GRAMAFONICOS, DISCOS COMPACTOS Y CINTAS CON MUSICA U OTRAS GRABACIONES DE SONIDO. REPRODUCCION A PARTIR DE COPIAS MATRICES DE DISCOS COMPACTOS Y CINTAS CON PELICULAS CINEMATOGRAFICAS Y OTRAS GRABACIONES DE VIDEO. REPRODUCCION A PARTIR DE COPIAS MATRICES DE PROGRAMAS INFORMATICOS Y DATOS EN CINTAS Y DISCOS."
+                            },
+                            {
+                                "code": "232002",
+                                "name": "FABRICACION DE PRODUCTOS DIVERSOS DERIVADOS DEL PETROLEO",
+                                "description": "FABRICACION DE ACEITES O GRASAS LUBRICANTES A BASE DEL PETROLEO. FABRICACION DE PRODUCTOS PARA LA INDUSTRIA PETROQUIMICA Y PARA LA FABRICACION DE PAVIMENTOS PARA CARRETERAS. FABRICACION DE DIVERSOS PRODUCTOS: BENCINA MINERAL, VASELINA, CERA DE PARAFINA, PETROLATO, ETC"
+                            },
+                            {
+                                "code": "232005",
+                                "name": "ELABORACION DE BIOCOMBUSTIBLES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION DE COMBUSTIBLES QUE SE DERIVEN DE LA BIOMASA (ORGANISMOS RECIENTEMENTE VIVOS O SUS DESECHOS METABOLICOS), TALES COMO EL BIOETANOL Y EL BIODIESEL, ENTRE OTROS."
+                            },
+                            {
+                                "code": "241101",
+                                "name": "FABRICACION DE SUSTANCIAS QUIMICAS Y GASES INDUSTRIALES EXCEPTO ABONOS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE GASES INDUSTRIALES, INCLUSO GASES ELEMENTALES; AIRE LIQUIDO Y AIRE COMPRIMIDO, ACETILENO, GASES REFRIGERANTES, MEZCLAS DE GASES INDUSTRIALES, OXIGENO, ETC. ASIMISMO, SUSTANCIAS QUIMICAS COMO HIDROCARBUROS, BENCENO, TOLUENO, XILENO Y OTROS PRODUCTOS DE LA DESTILACION DE ALQUITRAN DE HULLA Y ACEITE MINERAL, METANOL Y ALCOHOLES SUPERIORES EXCEPTO ALCOHOL ETILICO; CETONAS Y QUINONAS INCLUSO ACIDO ACITICO, MATERIAS COLORANTES DE ORIGEN ANIMAL Y VEGETAL, COLORANTES ORGANINCOS SINTETICOS, MATERIALES VOLATILES DE LA DESTILACION DE LA MADERA, TINTES SINTETICOS, LEJIA, CLORO, ETC."
+                            },
+                            {
+                                "code": "241201",
+                                "name": "FABRICACION DE ABONOS Y COMPUESTOS DE NITROGENO (ORGANICOS Y QUIMICOS)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE ABONOS: ABONOS NITROGENADOS, FISFATADOS Y POTASICOS PUROS O COMPLEJOS, UREA, FOSFATOS NATURALES CRUDOS Y SALES DE POTASIO NATURALES CRUDAS. FABRICACION DE PRODUCTOS DE NITROGENO CONEXOS: ACIDO NITRICO Y ACIDO SULFANITRICO, AMONIACO, CLORURO AMONICO, CARBONATO AMONICO, NITRITOS Y NITRATOS DE POTASIO. FABRICACION DE SUBSTRATOS HECHOS PRINCIPALMENTE DE TURBA. FABRICACION DE SUBSTRATOS HECHOS DE MEZCLAS DE TIERRA NATURAL, ARENA, ARCILLA Y MINERALES."
+                            },
+                            {
+                                "code": "241301",
+                                "name": "FABRICACION DE PLASTICOS Y CAUCHO SINTETICO EN FORMAS PRIMARIAS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE PLASTICOS EN FORMAS PRIMARIAS, INCLUSO POLIMEROS DE ETILENO, DE POLIPROPILENO Y DE OTRAS OLEFINAS, DE ESTIROLENO, DE CLORURO DE VINILO Y DE OTRAS OLEFINAS HALOGENADAS, DE ACETATO DE VINILO Y DE OTROS ESTERES DE VINILO, Y OTROS POLIMEROS DE VINILO; POLIACETALES, OTROS POLIETERES Y RESINAS EPOXIDICAS; POLICARBONATOS, RESINAS ALQUIDICAS, ESTERES DE POLIALILO Y OTROS POLIESTERES; POLIOAMIDAS; AMINORRESINAS, RESINAS FENOLICAS Y POLIURETANOS; SILICONAS; RESINAS DE PETROLEO, POLITERPENOS, POLISULFUROS, POLISULFONAS; CELULOSAY SUS DERIVADOS QUIMICOS; POLIMEROS NATURALES (POR EJEMPLO, ACIDO ALGINICO),POLIMEROS NATURALES MODIFICADOS, TALES COMO PROTEINAS ENDURECIDAS; E INTERCAMBIADORES DE IONES BASADOS EN LOS POLIMEROS ANTEDICHOS. FABRICACION DE CAUCHO SINTITICO Y DE SUCEDANEOS DE CAUCHO A PARTIR DE ACEITES, EN FORMAS PRIMARIAS. PRODUCCION DE MEZCLAS DE CAUCHO SINTITICO Y CAUCHO NATURAL Y DE GOMAS SIMILARES AL CAUCHO(POR EJEMPLO, BALATA), EN FORMAS PRIMARIAS."
+                            },
+                            {
+                                "code": "241302",
+                                "name": "FABRICACION DE RESINAS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE RESINAS: ACRILICA, ALQUID, DE ALUITRAN DE HULLA, CRISOL, FENOLICA, FTALICA ANHIDRICA, MELAMINA, POLIETILENO, SILICON, SINTETICA, UREA, VINILO"
+                            },
+                            {
+                                "code": "242101",
+                                "name": "FABRICACION DE PLAGUICIDAS Y OTROS PRODUCTOS QUIMICOS DE USO AGROPECUARIO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE INSECTICIDAS, RATICIDAS, FUNGICIDAS,HERBICIDAS, PRODUCTOS ANTIGERMINANTES, DESINFECTANTES Y OTROS PRODUCTOS QUIMICOSPARA USO AGROPECUARIO."
+                            },
+                            {
+                                "code": "242201",
+                                "name": "FABRICACION DE PINTURAS, BARNICES Y PRODUCTOS DE REVESTIMI-TO SIMILARES",
+                                "description": "ESTA CLASE SE REFIERE A LA FABRICACION DE PINTURAS, BARNICES, ESMALTES Y LACAS.PIGMENTOS Y OTRAS MATERIAS COLORANTES DEL TIPO UTILIZADO EN LA FABRICACION DEPINTURAS Y POR ARTISTAS Y OTROS PINTORES. FABRICACION DE MASILLAS. FABRICACION DE DISOLVENTES Y DILUYENTES ORGANICOS COMPUESTOS."
+                            },
+                            {
+                                "code": "242202",
+                                "name": "FABRICACION DE TINTAS DE IMPRENTAS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE TINTAS UTILIZADAS EN LA IMPRENTAS TAL COMO LAS TINTAS FLEXOGRAFICAS"
+                            },
+                            {
+                                "code": "242301",
+                                "name": "FABRICACION PRODUCTOS FARMACEUTICOS, SUSTANCIAS QUIMICAS YPRODUCTOS BOTANICOS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE SUSTANCIAS MEDICINALES ACTIVAS QUE SE UTILIZAN POR SUS PROPIEDADES FARMACOLOGICAS EN LA FABRICACION DE MEDICAMENTOS: ANTIBIOTICOS, VITAMINAS BASICAS, ACIDO SALICILICO Y ACETILSALICILICO, ETC. FABRICACION DE MEDICAMENTOS: ANTISUEROS Y OTRAS FRACCIONES DE SANGRE, VACUNAS, MDEICAMENTOS DIVERSOS, INCLUIDOS PREPARADOS HOMEOPATICOS. FABRICACION DE PRODUCTOS QUIMICOS ANTICONCEPTIVOS DE USO EXTERNO Y DE MEDICAMNETOS ANTICONCEPTIVOS HORMONALES. FABRICACION DE PRODUCTOS DE BIOTECNOLOGIA. FABRICACION DE P´REPARADOS PARA EL DIAGNOSTICO MEDICO. PREPARACION DE PRODUCTOS BOTANICOS, EMTRE OTROS."
+                            },
+                            {
+                                "code": "242401",
+                                "name": "FABRICACION JABONES, DETERGENTES, PREPARADOS DE TOCADOR, PARA LIMPIAR PULIR Y PERFUMES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE JABONES Y PREPARACIONES TENSO ACTIVAS, PREPARACIONES PARA LAVAR EN POLVO, LIQUIDOS, BARRAS, PANES, TROZOS O PIEZAS TROQUELADAS O MOLDEADAS Y DETERGENTES. ASI COMO LAS PREPARACIONES PARA ENJUAGADO SUAVIZANTE PARA LA ROPA (PARTIDA 3402902010). FABRICACION DE PREPARACIONES UTILIZADAS PARA LA LIMPIEZA, TALES COMO DESINFECTANTES Y LIMPIADORES MULTIUSO DE LAS PARTIDAS 3402200090 Y 3402902090 EXCEPTO LOS JABONES QUE SE CLASIFICAN EN LAS ACTIVIDADES 242404 Y 242405, PREPARACIONES PARA AFEITAR O PARA ANTES O DESPUES DEL AFEITADO, DESODORANTES CORPORALES, PREPARACIONES PARA EL BAÑO, DEPILATORIOS Y DEMAS PREPARACIONES DE PERFUMERIA DE TOCADOR O COSMETICA, INCLUSO CAMPUS, LACA, PREPARACIONES DE DESODORANTES DE LOCALES, INCLUSO SIN PERFUMAR AUNQUE TENGAN PROPIEDADES DESINFECTANTES."
+                            },
+                            {
+                                "code": "242404",
+                                "name": "FABRICACION DE JABONES DE TOCADOR",
+                                "description": "ESTA CLASE INCLUYE LOS JABONES DE TOCADOR."
+                            },
+                            {
+                                "code": "242405",
+                                "name": "FABRICACION DE JABONES PARA LAVAR (EXCEPTO PREPARACIONES TENSO ACTIVAS USADAS COMO JABON)",
+                                "description": "ESTA CLASE INCLUYE LOS JABONES PARA LAVAR, MOLDEADO O TROQUELADO, EXCEPTO LAS PREPARACIONES ORGANIZAS TENSOACTIVAS USADAS COMO JABON. DECRETO 32352-H."
+                            },
+                            {
+                                "code": "242406",
+                                "name": "FABRICACION DE CERAS, ABRILLANTADORES, LUSTRADORES Y PREPARACIONES SIMILARES",
+                                "description": "ESTA CLASE INCLUYE LA ELABORACION DE BETUNES Y CREMAS PARA EL CALZADO, CERAS PARA PISO, PARA CARROCERIA, VIDRIO, METAL, PASTAS Y POLVOS ABRASIVOS Y PRODUCTOS SIMILARES EN CUALQUIER PRESENTACION."
+                            },
+                            {
+                                "code": "242901",
+                                "name": "FABRICACION DE OTROS PRODUCTOS QUIMICOS.",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE: REPELENTE CONTRA MOSQUITOS, TANTO DE USO AMBIENTAL COMO CORPORAL. EXPLOSIVOS, PRODUCTOS PIROTECNICOS (ANTORCHAS, ARTICULOS ENCENDEDORES Y PRODUCTOS SIMILARES), POLVORAS PROPULSORAS, OTROS PREPARADOS EXPLOSIVOS, MECHAS DETONADORAS Y DE SEGURIDAD, CAPSULAS, FUEGOS ARTIFICIALES, BENGALAS DE SEÑALES Y ARTICULOS SIMILARES. GELATINA Y DERIVADOS DE LA GELATINA, COLAS DE ORIGEN ANIMAL Y OTROS ADHESIVOS PREPARADOS, INCLUSO ADHESIVOS PREPARADOS A BASE DE CAUCHO Y PLASTICO. PEPTONAS Y SUS DERIVADOS, OTRAS SUSTANCIAS PROTEINICAS Y SUS DERIVADOS NO CLASIFICADAS EN OTRA PARTE. ACEITES ESENCIALES. MODIFICACION MEDIANTE PROCESOS QUIMICOS (POR EJEMPLO, OXIDACION, POLIMERIZACION, ETC.) DE ACEITES Y GRASAS. MATERIALES PARA EL ACABADO DE PRODUCTOS TEXTILES. POLVOS Y PASTAS PARA SOLDADURA BLANDA, DURAURA Y AUTOGENA. SUSTANCIAS PARA EL DECAPADO DE METALES. CARBON ACTIVADO, ADITIVOS PARA ACEITES LUBRICANTES, PREPARADOS PARA ACELERAR LA VULCANIZACION DEL CAUCHO, CATALIZADORES Y OTROS PRODUCTOS QUIMICOS DE USO INDUSTRIAL. PREPARADOS ANTIDETONANTES, PREPARADOS ANTICONGELANTES, LIQUIDOS PARA TRANSMISIONES HIDRAULICAS, REACTIVOS COMPUESTOS PARA DIAGNOSTICO Y DE LABORATORIO, ETC. PRODUCTOS FOTOQUIMICOS, COMO PLACAS FOTOGRAFICAS, PELICULAS, PAPEL SENSIBILIZADO, OTROS MATERIALES SENSIBILIZADOS SIN IMPRESIONAR Y PREPARADOS QUIMICOS DE USO FOTOGRAFICO. TINTAS PARA ESCRIBIR Y DIBUJAR. MATERIALES VIRGENES DE REPRODUCCION PARA GRABACIONES SONORAS Y DE OTRO TIPO. SAL PROCESADA."
+                            },
+                            {
+                                "code": "242902",
+                                "name": "FABRICACION DE PEGAMENTOS Y ADHESIVOS",
+                                "description": "ESTA INCLUYE LA FABRICACION DE PEGAMENTOS Y ADHESIVOS PREPARADOS, PARA USO DOMESTICO, INDUSTRIAL, ESCOLAR, ENTRE OTROS DE ORIGEN ANIMAL, VEGETAL O SINTETICO EXEPTO EL DENTAL."
+                            },
+                            {
+                                "code": "242903",
+                                "name": "REPARACION DE ARMAS DE FUEGO",
+                                "description": "INCLUYASE LA REPARACION DE LAS ARMAS DE FUEGO DE CUALQUIER TIPO Y CALIBRE."
+                            },
+                            {
+                                "code": "243001",
+                                "name": "FABRICACION DE FIBRAS SINTETICAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE FIBRAS DISCONTINUAS Y ESTOPAS DE FILAMENTO ARTIFICIAL O SINTETICO, SIN CARDAR NI PEINAR. FABRICACION DE HILADOS DE FILAMENTO SINTETICO O ARTIFICIAL, TEJIDOS O NO, DE GRAN RESISTENCIA, MULTIPLES O CABLEADOS. FABRICACION DE FIBRAS O HEBRAS SINTETICAS O ARTIFICIALES SIN FILAMENTO (POR EJEMPLO, PAJA ARTIFICIAL)."
+                            },
+                            {
+                                "code": "251101",
+                                "name": "FABRICACION DE LLANTAS Y CUBIERTAS PARA EQUIPO Y MAQUINARIAMOVIL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE LLANTAS Y NEUMATICOS PARA VEHICULOS, EQUIPO Y MAQUINARIA MOVIL. TAMBIEN INCLUYE LA FABRICACION DE CUBIERTAS PARA VEHICULOS Y EQUIPO DISTINTOS DE LOS DE CIRCULACION POR CARRETERA, COMO AERONAVES Y TOPADORAS, Y PARA JUGUETES, MUEBLES Y OTROS USOS. FABRICACION DE CAMARAS PARA LAS CUBIERTAS DESCRITAS ANTERIORMENTE. FABRICACION DE PARTES DE CUBIERTAS, TALES COMO BANDAS DE RODADURA INTERCAMBIABLES, FAJAS DE PROTECCION DE LA CAMARA Y TIRAS DE REMIENDO"
+                            },
+                            {
+                                "code": "251102",
+                                "name": "REENCAUCHADORA DE LLANTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS DE REENCAUCHE DE LLANTAS PARA TODO TIPO DE VEHICULO EXCEPTO LOS REENCAUCHES DE LLANTAS PARA MAQUINARIA AGRICOLA POR NO ESTAR ESTOS ULTIMOS AFECTOS AL IMPUESTO SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "251901",
+                                "name": "FABRICACION DE OTROS PRODUCTOS DE CAUCHO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE PRODUCTOS DE CAUCHO NO CLASIFICADOS EN OTRA PARTE. FABRICACION DE PRODUCTOS DE CAUCHO ACABADOS Y SEMIACABADOS; PRODUCTOS DE CAUCHO ENDURECIDO, VULCANIZADO Y SIN VULCANIZAR; PRODUCTOS CONSTITUIDOS EN TODO O EN PARTE POR CAUCHO NATURAL O SINTETICO O POR GOMAS PARECIDAS AL CAUCHO. ENTRE LA GRAN VARIEDAD DE ACTIVIDADES DE ESTA CLASE SE INCLUYE LA FABRICACION DE PLANCHAS, LAMINAS, TIRAS, VARILLAS Y PERFILES; TUBOS, CAÑOS Y MANGUERAS; CORREAS Y CINTAS TRANSPORTADORAS Y DE TRANSMISION; ARTICULOS HIGIENICOS Y FARMACEUTICOS; ARTICULOS DE VESTUARIO; PRODUCTOS PARA EL REVESTIMIENTO DE PISOS, ETC."
+                            },
+                            {
+                                "code": "252001",
+                                "name": "FABRICACION DE ARTICULOS DE PLASTICO",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE PRODUCTOS PLASTICOS, TALES COMO PLANCHAS, LAMINAS, PELICULAS, HOJAS Y TIRAS; TUBOS, CAÑOS Y MANGUERAS; ACCESORIOS DE CAÑOS Y MANGUERAS, PLANCHAS, Y OTRAS FORMAS PLANAS AUTOADHESIVAS; REVESTIMIENTOS DE PLASTICO PARA PISOS, PAREDES Y TECHOS, EN ROLLOS Y EN FORMA DE LOSETAS; Y OTROS PRODUCTOS PRIMARIOS DE PLASTICO. TAMBIEN INCLUYE LA FABRICACION DE ARTICULOS DE PLASTICO SANITARIOS (BAÑERAS, DUCHEROS, LAVADOS, TAZAS DE INODOROS, CISTERNAS DE INODOROS, ETC); ENVASES COMO BOLSAS, SACOS, CAJONES, CAJAS, GARRAFONES, BOTELLAS,ETC.; SERVICIOS DE MESA, UTENSILIOS DE COCINA Y ARTICULOS DE TOCADOR; ARTICULOS PARA OBRAS DE CONSTRUCCION, COMO PUERTAS, VENTANAS Y SUS MARCOS, POSTIGOS Y PERSSIANAS; Y OTROS ARTICULOS, COMO CUBRECABEZAS, ACCESORIOS PARA AISLAMIENTO, PIEZAS DE LAMPARAS Y ACCESORIOS PARA ALUMBRADO, MATERIAL ESCOLAR Y DE OFICINA, ARTICULOS DE VESTUARIO, ACCESORIOS PARA MUEBLES, CARROCERIAS DE VEHICULOS Y ARTICULOS SIMILARES, ESTATUILLAS Y OTROS ARTICULOS ORNAMENTALES."
+                            },
+                            {
+                                "code": "261001",
+                                "name": "FABRICACION DE VIDRIO Y PRODUCTOS DE VIDRIO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE VIDRIO EN TODAS SUS FORMAS Y DE ARTICULOS DE VIDRIO: VIDRIO EN MASA Y EN OTROS ESTADOS, LABRADO O NO, INCLUSO LAMINAS, PLANCHAS, TUBOS Y VARILLAS. VIDRIO DE DIVERSA COMPOSICION QUIMICA, INCLUSO CUARZO FUNDIDO Y OTROS SILICES FUNDIDOS. VIDRIO DE DISTINTAS CARACTERISTICAS FISICAS, INCLUSO VIDRIO CON ARMADO DE ALAMBRE Y VIDRIO COLOREADO, TEÑIDO, ENDURECIDO Y LAMINADO. VIDRIO COLADO, ESTIRADO, SOPLADO, LAMINADO Y TEMPLADO, O FABRICADO POR OTROS PROCESOS. ARTICULOS DE VIDRIO UTILIZADOS EN LA CONSTRUCCION, COMO BLOQUES DE VIDRIO; RECIPIENTES DE VIDRIO, INCLUSO TAPAS Y TAPONES; ENVOLTURAS DE VIDRIO, INCLUSO CAMISAS, PARA DIVERSOS RECIPIENTES; ARTICULOS DE VIDRIO PARA LA COCINA, PARA SERVICIOS DE MESA Y PARA EL TOCADOR, Y PARA LA OFICINA Y OTROS LUGARES; CRISTALERIA DE LABORATORIO, HIGIENICA Y FARMACEUTICA; VIDRIO PARA RELOJES, VIDRIO OPTICO Y PIEZAS DE VIDRIO OPTICO SIN LABRAR, ETC. PIEZAS DE VIDRIO UTILIZADAS EN JOYAS DE FANTASIA (PERO NO LAS JOYAS DE FANTASIA EN SI). FIBRAS DE VIDRIO (INCLUSO LANA DE VIDRIO) E HILADOS DE FIBRAS DE VIDRIO. PRODUCTOS NO TEJIDOS DE FIBRAS DE VIDRIO, COMO ESTERAS, COLCHONES, TABLEROS Y ARTICULOS SIMILARES."
+                            },
+                            {
+                                "code": "269101",
+                                "name": "FABRICACION PRODUCTOS DE CERAMICA BARRO LOZA Y/O PORCELANANO REFRACTARIA USO NO ESTRUCTURAL",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE ARTICULOS DE CERAMICA NO REFRACTARIA PARA USO NO ESTRUCTURAL: ARTICULOS DE CERAMICA, INCLUSO ARTICULOS DE PORCELANA, LOZA, PIEDRA Y ARCILLA, DE IMITACION DE PORCELANA, Y DE ALFARERIA COMUN. VAJILLA Y OTROS ARTICULOS UTILIZADOS HABITUALMENTE CON FINES DOMESTICOS Y DE ASEO. ESTATUILLAS Y OTROS ARTICULOS ORNAMENTALES DE CERAMICA. ARTICULOS DE CERAMICA PARA LABORATORIOS, LA INDUSTRIA QUIMICA Y LA INDUSTRIA EN GENERAL, Y CERAMICA UTILIZADA EN LA AGRICULTURA. ARTEFACTOS HIGIENICOS DE CERAMICA Y OTROS ARTICULOS DE CERAMICA PARA USO NO ESTRUCTURAL. AISLADORES ELECTRICOS DE CERAMICA. ACCESORIOS AISLANTES DE CERAMICA PARA MAQUINAS, ARTEFACTOS Y EQUIPO ELECTRICOS. OBJETOS DE BARRO"
+                            },
+                            {
+                                "code": "269201",
+                                "name": "FABRICACION DE PRODUCTOS DE CERAMICA REFRACTARIA",
+                                "description": "ESTA CLASE ABARCA LA FABRICACION DE ARTICULOS DE CERAMICA PARA AISLAMIENTO TERMICO MEDIANTE EL MOLDEADO Y LA COCHURA DE TIERRAS SILICEAS FOSILES. LADRILLOS, BLOQUES, LOSETAS Y OTROS ARTICULOS SIMILARES DE CERAMICA REFRACTARIA PARA LA CONSTRUCCION. PRODUCTOS DE CERAMICA RESISTENTES A LAS ELEVADAS TEMPERATURAS DE LA METALURGIA. CEMENTOS REFRACTARIOS. RETORTAS, CRISOLES, MUFLAS, TOBERAS, TUBOS, CAÑOS, ETC."
+                            },
+                            {
+                                "code": "269301",
+                                "name": "FABRICACION DE PRODUCTOS DE ARCILLA Y CERAMICA NO REFRACTARIAS PARA USO ESTRUCTURAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE MATERIALES DE CERAMICA PARA LA CONSTRUCCION, COMO LADRILLOS, BLOQUES PARA PISOS, TEJAS Y SOMBRERETES DE CHIMENEA. FABRICACION DE TUBOS, CONDUCTOS, CANALONES Y ACCESORIOS PARA TUBERIAS DE CERAMICA. FABRICACION DE BALDOSAS Y LOSAS PARA PAVIMENTOS, LOSETAS PARA LA PARED Y PARA CAÑONES DE CHIMENEAS, TESELAS DE MOSAICO Y PRODUCTOS SIMILARES DE CERAMICA, ESMALTADOS O NO."
+                            },
+                            {
+                                "code": "269401",
+                                "name": "FABRICACION Y/O VENTA DE CEMENTO, CAL Y YESO",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE CEMENTOS HIDRAULICOS, INCLUSO CEMENTO DE PORTLAND, CEMENTO ALUMINOSO Y CEMENTO HIPERSULFATADO, EN FORMA DE CLINCA Y EN OTRAS FORMAS. FABRICACION DE CAL VIVA, CAL APAGADA Y CAL HIDRAULICA. FABRICACION DE YESOS CON YESO CALCINADO Y CON SULFATO DE CALCIO."
+                            },
+                            {
+                                "code": "269501",
+                                "name": "FABRICACION DE ARTICULOS DE CEMENTO, YESO Y HORMIGON PARA LA CONSTRUCCION",
+                                "description": "COMPRENDE LA FABRICACION DE ARTICULOS A BASE DE CEMENTO COMO LOSETAS, BALDOSAS,LADRILLOS, PLACHAS, ESTATUAS, MUEBLES, LAMINAS, TUBOS, POSTES, JARRONES, MACETAS, LAVAMANOS, LAVADEROS (PILAS), BLOQUES Y FORMAS DE CONCRETO. ARTICULOS DE HORMIGON TALES COMO: LOSETAS, BALDOSAS, LADRILLOS, BLOQUES, PLANCHAS, LAMINAS, TABLEROS, POSTES. ARTICULOS DE YESO TALES COMO: LOSETA, BALDOSAS, LADRILLOS, PLANCHAS, LAMINAS, TABLEROS, TUBOS Y POSTES, ASI COMO OTROS ARTICULOS COMO ESTATUAS, MUEBLES, BAJORELIEVES Y ALTORELIEVES, JARONES, MACETAS, ETC TODOS PARA LA CONSTRUCCION"
+                            },
+                            {
+                                "code": "269601",
+                                "name": "CORTE, TALLADO Y ACABADO DE LA PIEDRA",
+                                "description": "ESTA CLASE INCLUYE EL CORTE, TALLADO Y ACABADO DE LA PIEDRA PARA CONSTRUCCION, CEMENTERIOS, CARRETERAS, TECHOS Y OTROS USOS POR EJEMPLO LA MARMOLERIA, ENTRE OTROS. TAMBIEN INCLUYE OBRAS EFECTUADAS CON LA PIEDRA EN BRUTO EXTRAIDA DE CANTERAS."
+                            },
+                            {
+                                "code": "269901",
+                                "name": "FABRICACION DE OTROS PRODUCTOS MINERALES NO METALICOS N.C.P.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: HILADOS Y TELA DE ASBESTO, Y ARTICULOS DE HILADOS Y TELA DE ASBESTO, COMO ROPA, CUBRECABEZAS, CALZADO, CORDONES, CORDELES, PAPEL Y FIELTRO. MATERIALES DE FRICCION SOBRE UNA BASE DE ASBESTO, DE OTRAS SUSTANCIAS MINERALES Y DE CELULOSA, COMBINADOS O NO CON OTROS MATERIALES. ARTICULOS SIN MONTAR DE ESOS MATERIALES DE FRICCION. MATERIALES AISLANTES DE ORIGEN MINERAL: LANA DE ESCORIAS, LANA DE ROCA Y OTRAS LANAS MINERALES SIMILARES; VERMICULITA DESCAMADA, ARCILLAS DILATADAS Y MATERIALES SIMILARES PARA AISLAMIENTO TERMICO Y SONORO, Y PARA ABSORBER EL SONIDO. PRODUCTOS DE LANA DE VIDRIO PARA AISLAMIENTO TERMICO. ARTICULOS DE ASFALTO Y DE MATERIALES SIMILARES,COMO POR EJEMPLOBREA DE ALQUITRAN DE HULLA. MUELAS DE MOLINO, PIEDRAS DE AMOLAR Y DE PULIMENTAR, Y PRODUCTOS ABRASIVOS NATURALES Y ARTIFICIALES, INCLUSO POLVO ABRASIVO Y GRANO ABRASIVO SOBRE UNA BASE DE MATERIAL TEXTIL, Y SOBRE PAPEL, CARTON Y OTROS MATERIALES. ARTICULOS ELABORADOS CON OTRAS SUSTANCIAS MINERALES NO CLASIFICADAS EN OTRA PARTE, INCLUSO MICA LABRADA Y ARTICULOS DE MICA, DE TURBA Y DE GRAFITO (QUE NO SEAN ARTICULOS ELECTRICOS) Y DE OTRAS SUSTANCIAS MINERALES."
+                            },
+                            {
+                                "code": "271001",
+                                "name": "INDUSTRIAS BASICAS DE HIERRO Y ACERO",
+                                "description": "ESTA CLASE INCLUYE: FUNCIONAMIENTO DE ALTOS HORNOS, CONVERTIDORES DE ACERO, TALLERES DE LAMINADO Y DE ACABADO. FABRICACION DE PRODUCTOS PRIMARIOS DE HIERRO Y ACERO, COMO POR EJEMPLO: PRODUCTOS PRIMARIOS DE METAL FERROSO EN GRANALLA Y EN POLVO, Y EN FORMA DE ARRABIO, BLOQUES, GRUMOS Y LIQUIDOS A PARTIR DE MINERAL Y ESCORIAS DE HIERRO. HIERRO DE PUREZA EXCEPCIONAL, MEDIANTE ELECTROLISIS Y OTROS PROCESOS QUIMICOS. HIERRO EN LINGOTES, INCLUSO HIERRO ESPECULAR Y FERROALEACIONES, E HIERRO ESPONJOSO. ACERO, MEDIANTE PROCESOS NEUMATICOS Y DE COCCION. LINGOTES DE ACERO Y DE ACERO DE ALEACION. TOCHOS, BARRAS, PALASTROS Y OTRAS FORMAS DE HIERRO, ACERO Y ACERO DE ALEACION EN ESTADO SEMIACABADO. PRODUCTOS DE HIERRO, ACERO Y ACERO DE ALEACION, LAMINADOS, TREFILADOS, EXTRUDIDOS Y FORJADOS. EL TRATAMIENTO DE ESTOS PRODUCTOS PUEDE SER EN CALIENTE O EN FRIO Y PUEDE EMPEZAR EN CALIENTE Y TERMINAR EN FRIO. ENTRE LOS PRODUCTOS DE LOS TALLERES DE LAMINADO PLANO, LAMINADO TUBULAR Y ACABADO SE CUENTAN LAS HOJAS, PLANCHAS Y ROLLOS; BARRAS Y VARILLAS; BARRAS Y VARILLAS PARA BARRENAS; PIEZAS EN ANGULOS, PERFILES, SECCIONES Y ALAMBRE; TUBOS, CAÑOS Y PERFILES HUECOS DE HIERRO Y ACERO SIN COSTURA, INCLUSO TUBOS, CAÑOS Y PERFILES HUECOS DE FUNDICION CON COSTURA ABIERTA O SOLDADOS, REMACHADOS O UNIDOS EN FORMA SIMILAR; MATERIAL DE CONSTRUCCION PARA VIAS DE FERROCARRIL Y DE TRANVIA, COMO POR EJEMPLO CARRILES NO ENSAMBLADOS; Y OTROS PRODUCTOS ACABADOS DE HIERRO Y DE ACERO."
+                            },
+                            {
+                                "code": "272001",
+                                "name": "FABRICACION DE PRODUCTOS PRIMARIOS DE METALES PRECIOSOS Y METALES NO FERROSOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE METALES PRECIOSOS: ORO, PLATA Y METALES DEL GRUPO DEL PLATINO. REFINACION DE DICHOS METALES PRECIOSOS. PRODUCCION DE METALES PRECIOSOS SIN LABRAR Y LABRADOS: PLATA EN GRUMOS, GRANOS, LINGOTES, BARRAS FUNDIDAS, PELLAS, ETC., Y EN BARRAS LAMINADAS, VARILLAS, SECCIONES, ALAMBRES, PLANCHAS, HOJAS Y TIRAS, Y EN TUBOS, CAÑOS, BARRAS HUECAS, HOJUELAS, POLVO, ETC.; ORO Y PLATINO Y METALES DEL GRUPO DEL PLATINO EN FORMAS SIMILARES A LAS INDICADAS PARA LA PLATA. PRODUCCION DE METALES PRECIOSOS ENCHAPADOS: METALES COMUNES ENCHAPADOS DE PLATA EN FORMA DE BARRAS, VARILLAS, SECCIONES, HOJAS, TUBOS, ETC.; METALES COMUNES Y PLATA ENCHAPADOS DE ORO EN FORMAS SIMILARES A LAS INDICADAS PARA LA PLATA; ORO, PLATA Y METALES COMUNES ENCHAPADOS DE PLATINO Y METALES DEL GRUPO DEL PLATINO EN FORMAS SIMILARES A LAS INDICADAS PARA LA PLATA. PRODUCCION DE METALES COMUNES NO FERROSOS UTILIZANDO MINERAL EN BRUTO, MINERAL EN MATA, OTRAS MATERIAS PRIMAS INTERMEDIAS ENTRE EL MINERAL EN BRUTO Y EL METAL (POR EJEMPLO, ALUMINA), Y CHATARRA. OPERACIONES REALIZADAS POR TALLERES DE FUNDICION, DE REFINACION ELECTROLITICA Y DE OTRA INDOLE PARA PRODUCIR METALES COMUNES NO FERROSOS SIN LABRAR. TALLERES DE FUNDICION Y REFINACION DE COBRE, PLOMO, CROMO, MANGANESO, ZINC, ALUMINIO, NIQUEL, ESTAÑO Y OTROS METALES COMUNES NO FERROSOS Y ALEACIONES DE ESOS METALES. PRODUCCION DE ALUMINA Y MATAS DE NIQUEL Y DE COBRE. FABRICACION DE PRODUCTOS DE METALES COMUNES NO FERROSOS MEDIANTE LAMINADO, TREFILADO Y EXTRUSION. FABRICACION DE POLVOS Y ESCAMAS; HOJAS DELGADAS; HOJAS, PLANCHAS Y TIRAS; BARRAS, VARILLAS Y PERFILES; ALAMBRE; TUBOS, CAÑOS Y ACCESORIOS PARA TUBOS Y CAÑOS. PRODUCCION DE ORO AMONEDADO."
+                            },
+                            {
+                                "code": "273101",
+                                "name": "FUNDICION DE HIERRO Y ACERO",
+                                "description": "ESTA CLASE INCLUYE LA FUNDICION DE PRODUCTOS ACABADOS Y SEMIACABADOS DE HIERRO Y DE ACERO. CADA UNA DE LAS ACTIVIDADES DE ESTA CLASE ARROJA UNA AMPLIA GAMA DE PRODUCTOS, CARACTERISTICOS TODOS DE OTRAS CLASES DE ACTIVIDAD."
+                            },
+                            {
+                                "code": "273201",
+                                "name": "FUNDICION DE METALES NO FERROSOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FUNDICION DE PRODUCTOS ACABADOS Y SEMIACABADOS DE METALES NO FERROSOS TALES COMO COBRE, PLOMO, CROMO, MANGANESO, ZINC, ALUMINIO, NIQUEL, ESTAÑO, COBALTO Y TITANIO, ASI COMO LAS ALEACIONES DE ESOS METALES."
+                            },
+                            {
+                                "code": "281101",
+                                "name": "FABRICACION DE PRODUCTOS METALICOS PARA USO ESTRUCTURAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE ESTRUCTURAS METALICAS, PARTES DE ESTRUCTURAS METALICAS, ESTRUCTURAS ELABORADAS DE ACERO Y PRODUCTOS SIMILARES, TALES COMO PUENTES Y SECCIONES DE PUENTES, TORRES, MASTILES, COLUMNAS, VIGAS, ARMADURAS, ANDAMIOS, FORMALETAS (ELEMENTOS COMPONENTES EN LA ESTRUCTURA, TALES COMO MUROS, CIMENTACIONES, COLUMNAS, VIGAS, ESCALERAS, MOLDURAS DE VENTANAS, TABLAS/TABLONES PARA MOLDES, BALCONES, DETALLES DECORATIVOS ENTRE OTROS), ARCOS, CABIOS, CASTILLETES PARA BOCAS DE POZOS, SOPORTES TELESCOPICOS, COMPUERTAS DE ESCLUSAS, MUELLES Y ESPIGONES. SE INCLUYE LA CONSTRUCCION DE EDIFICIOS PREFABRICADOS PRINCIPALMENTE DE METAL. FABRICACION DE PUERTAS Y VENTANAS DE METAL Y DE SUS MARCOS, POSTIGOS, ESCALERAS DE INCENDIO, PORTALES Y CARPINTERIA METALICA SIMILAR A LA UTILIZADA EN LA CONSTRUCCION. LOS ARTICULOS CUYA FABRICACION SE INCLUYE EN ESTA CLASE SON PRINCIPALMENTE DE HIERRO, ACERO O ALUMINIO. SE TRATA DE ARTICULOS LISTOS PARA SER MONTADOS O INSTALADOS, ADEMAS SE INCLUYE LA ERECCION DE ESTRUCTURAS METALICAS COMPUESTAS DE PIEZAS DE FABRICACION PROPIA."
+                            },
+                            {
+                                "code": "281201",
+                                "name": "FABRICACION DE TANQUES, DEPOSITOS Y RECIPIENTES DE METAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE RECIPIENTES DE METAL PARA GAS COMPRIMIDO Y GAS LICUADO. FABRICACION DE CALDERAS Y RADIADORES PARA CALEFACCION CENTRAL. FABRICACION DE TANQUES, DEPOSITOS Y RECIPIENTES SIMILARES DE METAL, DEL TIPO HABITUALMENTE UTILIZADO PARA EL ALMACENAMIENTO Y PARA LA ELABORACION DE METALES, CON O SIN TAPAS Y CIERRES, O ENCAMISADOS CON MATERIALES QUE NO SEAN HIERRO, ACERO O ALUMINIO."
+                            },
+                            {
+                                "code": "281301",
+                                "name": "FABRICACION GENERADORES DE VAPOR, EXCEPTO CALDERAS DE AGUA CALIENTE PARA CALEFACION CENTRAL",
+                                "description": "ESTA CLASE ABARCA LA FABRICACION DE REACTORES NUCLEARES PARA TODOS LOS FINES, MENOS PARA LA SEPARACION DE ISOTOPOS. FABRICACION DE CALDERAS GENERADORAS DE VAPOR DE AGUA Y OTROS VAPORES QUE NO SEAN CALDERAS DE AGUA CALIENTE PARA CALEFACCION, AUNQUE TAMBIEN PRODUZCAN VAPOR A BAJA PRESION. FABRICACION DE INSTALACIONES AUXILIARES PARA CALDERAS, TALES COMO ECONOMIZADORES, RECALENTADORES, RECOLECTORES Y ACUMULADORES DE VAPOR. ASIMISMO, DESHOLLINADORES, RECUPERADORES DE GASES Y SACABARROS."
+                            },
+                            {
+                                "code": "289201",
+                                "name": "SERVICIOS DE SOLDADURA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS DE SOLDADURA POR CONTRATA O A CAMBIO DE UNA RETRIBUCION. POR LO GENERAL ESTA ACTIVIDAD NO TOMA POSESION DE LOS ARTICU- LOS NI LOS VENDEN A TERCEROS."
+                            },
+                            {
+                                "code": "289202",
+                                "name": "SERVICIO DE TRATAMIENTO Y REVESTIMIENTO DE TODO TIPO DE MATERIALES",
+                                "description": "ESTA CLASE INCLUYE LAS ACTIVIDADES DE ENCHAPADO, PULIMENTO, ANODIZACION, PINTURA, GRABADURA, IMPRESION, ENDURECIMIENTO, BRUÑIDO, DESBARBADO, LIMPIEZA CON CHORRO DE ARENA, PULIMENTO EN TAMBOR GIRATORIO, LIMPIEZA, SOLDADURA, ESMERILADO Y OTROS TRATAMIENTOS ESPECIALES DEL METAL Y DE ARTICULOS DE METAL QUE SE REALIZAN POR CONTRATA O A CAMBIO DE UNA RETRIBUCION. LAS UNIDADES QUE SE INCLUYEN EN ESTA CLASE POR LO GENERAL NO TOMAN POSESION DE LOS ARTICULOS NI LOS VENDEN A TERCEROS."
+                            },
+                            {
+                                "code": "289302",
+                                "name": "HOJALATERIA",
+                                "description": "EN ESTA CLASE SE INLCUYE EL TALLER DONDE SE HACEN Y VENDEN PIEZAS Y ARTICULOS DE HOJALATA."
+                            },
+                            {
+                                "code": "289304",
+                                "name": "TALLER DE MECANICA DE PRECISION",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS TALLERES DE MECANICA DE PRECISION PARA LA FABRICACION DE HERRAMIENTAS, PARTES Y PIEZAS PARA TODO TIPO DE MAQUINARIA Y EQUIPO."
+                            },
+                            {
+                                "code": "289305",
+                                "name": "FABRICACION DE PIEZAS, ARTICULOS Y ACCESORIOS DE METAL INCLUYE LAS CERRAJERIAS.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE ACCESORIOS DE METAL COMO CERRADURAS,CANDADOS, PASADORES, LLAVES Y OTROS ACCESORIOS PARA EDIFICIOS, MUEBLES, VEHICU-LOS Y OTROS USOS, ASI COMO PIEZAS, MOLDES, TAPAS,SEÑALES METALICAS, SUJETADORES(CLAVOS, TACHUELAS, GRAPAS, ETC) DE METAL, ASI COMO LA TELA METALICA (MALLA, CEDAZO, ETC)"
+                            },
+                            {
+                                "code": "289306",
+                                "name": "SERVICIOS DE TORNO (MECANICA DE PRECISION)",
+                                "description": "EN ESTA CLASE DE INCLUYE EL SERVICIO DE TORNO Y MECANICA DE PRECISION, NO INCLUYE MATERIALES SOLO SERVICIO."
+                            },
+                            {
+                                "code": "289902",
+                                "name": "FABRICACION DE OTROS PRODUCTOS ELABORADOS DE METAL N.C.P.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: SUJETADORES DE METAL: CLAVOS, REMACHES, TACHUELAS, ALFILERES, GRAPAS, ARANDELAS Y PRODUCTOS SIMILARES SIN ROSCA; Y TUERCAS, PERNOS, TORNILLOS Y OTROS ARTICULOS SIN ROSCA. PRODUCTOS DE TORNILLERIA. CABLES DE METAL, TRENZAS Y ARTICULOS SIMILARES DE HIERRO, ACERO, ALUMINIO Y COBRE. ARTICULOS HECHOS DE ALAMBRE: ALAMBRE DE PUAS, CERCAS DE ALAMBRE, REJILLAS, REDES Y TELAS DE ALAMBRE, ETC. RECIPIENTES UTILIZADOS PARA EL ENVASE Y TRANSPORTE DE MERCANCIAS: BARRILES, TAMBORES, BIDONES, TARROS, CAJAS, ETC. MUELLES, INCLUSO MUELLES SEMIACABADOS DE USO GENERAL, EXCEPTO MUELLES PARA RELOJES: MUELLES DE BALLESTA, MUELLES HELICOIDALES, BARRAS DE TORSION, ETC. MACHETES, ESPADAS Y ARMAS SIMILARES. VAJILLA DE MESA Y DE COCINA, SEAN O NO DE METALES COMUNES ENCHAPADOS CON METALES PRECIOSOS; SARTENES, CACEROLAS Y OTROS UTENSILIOS DE COCINA. PEQUEÑOS APARATOS DE COCINA ACCIONADOS A MANO PARA PREPARAR, ADEREZAR O SERVIR ALIMENTOS. ARTICULOS SANITARIOS DE METAL, INCLUSO BAÑERAS, PILAS, LAVATORIOS Y OTROS ARTICULOS SANITARIOS Y DE ASEO, ESMALTADOS O NO. ARTICULOS DE METAL PARA OFICINA, EXCEPTO MUEBLES DE METAL. CASCOS PROTECTORES DE METAL PARA LA CABEZA. CAJAS DE CAUDALES, CAJAS FUERTES, PORTICOS Y PUERTAS DE CAMARAS BLINDADAS, ETC., ACORAZADAS O REFORZADAS. PIEZAS Y ACCESORIOS PARA VIAS DE FERROCARRIL Y DE TRANVIA (POR EJEMPLO, CARRILES ENSAMBLADOS, PLATAFORMAS GIRATORIAS, POTROS DE CONTENCION, ETCOTROS ARTICULOS DE METAL NO CLASIFICADOS EN OTRA PARTE, INCLUSO CADENAS, EXCEPTO LAS DE TRANSMISION DE POTENCIA, HELICES PARA BARCOS Y PALAS PARA HELICES DE BARCOS, ANCLAS, CAMPANAS, MARCOS PARA CUADROS, TUBOS FLEXIBLES, CIERRES, HEBILLAS, CORCHETES, ALMOHADILLAS METALICAS PARA FREGAR, LETREROS Y ARTICULOS SIMILARES, CUALQUIERA QUE SEA EL METAL UTILIZADO, EXCEPTO METALES PRECIOSOS."
+                            },
+                            {
+                                "code": "290001",
+                                "name": "SERVICIO DE REPARACION DE MAQUINARIA Y EQUIPO.",
+                                "description": "ESTA CLASE SE REFIERE AL SERVICIO DE REPARACION DE MAQUINARIA Y EQUIPO, AGROPECUARIO, AGRICOLA, INDUSTRIAL, BOMBAS, COMPRESORES, ENGRANAJES, EQUIPO MEDICO, ENTRE OTROS A CAMBIO_DE UNA RETRIBUCION O POR CONTRATA EXCEPTO LA REPARACION DE AERONAVES, VEHICULOS Y MOTOCICLETAS. ESTA ACTIVIDAD QUEDA AFECTA AL IMPUESTO GENERAL DE LAS VENTAS INDEPENDIENTEMENTE DEL LUGAR DONDE SE PRESTE EL SERVICIO DE ACUERDO AL OFICIO DGT-87-07 DE LA DGT."
+                            },
+                            {
+                                "code": "290003",
+                                "name": "SERVICIO DE MANTENIMIENTO DE MAQUINARIA Y EQUIPO.",
+                                "description": "ESTA CLASE SE REFIERE AL SERVICIO DE MANTENIMIENTO DE MAQUINARIA Y EQUIPO, AGROPECUARIO, AGRICOLA, INDUSTRIAL, BOMBAS, COMPRESORES, ENGRANAJES, EQUIPO MEDICO, ENTRE OTROS A CAMBIO_DE UNA RETRIBUCION O POR CONTRATA. EXCEPTO EL MANTENIMIENTO REPARACION DE AERONAVES, VEHICULOS Y MOTOCICLETAS."
+                            },
+                            {
+                                "code": "291101",
+                                "name": "FABRICACION DE MOTORES Y TURBINAS, EXCEPTO MOTORES PARA AERONAVES, VEHICULOS AUTOMOTORES Y MOTOCICLETAS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE: MOTORES DE COMBUSTION INTERNA CON EMBOLOS DE MOVIMIENTO RECTILINEO O ROTATIVO Y DE ENCENDIDO POR CHISPA ELECTRICA O POR COMPRESION PARA USOS MOVILES Y ESTACIONARIOS DISTINTOS DEL DE PROPULSION DE VEHICULOS AUTOMOTORES Y AERONAVES. PARTES DE DICHOS MOTORES, COMO POR EJEMPLO VALVULAS. TURBINAS DE VAPOR DE AGUA Y DE OTROS TIPOS DE VAPOR TURBINAS HIDRAULICAS, RUEDAS HIDRAULICAS Y MAQUINARIA PARA SU REGULACION. TURBINAS DE GAS, DISTINTAS DE LOS TURBOPROPULSORES DE REACCION Y DE HELICE, PARA LA PROPULSION DE AERONAVES. LAS TURBINAS INCLUIDAS EN ESTA CLASE SE UTILIZAN EN LA PROPULSION MARINA Y COMO PRINCIPAL FUERZA MOTRIZ DE BOMBAS Y GENERADORES ELECTRICOS. TURBOCALDERAS Y MOTORES ESTACIONARIOS DE VAPOR CON CALDERA INTEGRAL."
+                            },
+                            {
+                                "code": "291201",
+                                "name": "FABRICACION DE BOMBAS, COMPRESORES, GRIFOS Y VALVULAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: MAQUINAS Y MOTORES HIDRAULICOS COMPUESTOS DE BOMBAS DE GRAN POTENCIA. BOMBAS PARA LIQUIDOS, TENGAN O NO DISPOSITIVOS DE MEDICION, INCLUSO BOMBAS DE MANO Y BOMBAS PARA MOTORES DE COMBUSTION INTERNA DE EMBOLO, BOMBAS PARA IMPELER HORMIGON Y OTRAS BOMBAS. BOMBAS DE AIRE Y DE VACIO, COMPRESORES DE AIRE Y OTROS COMPRESORES DE GAS. GRIFOS, LLAVES DE PASO, VALVULAS Y ACCESORIOS SIMILARES PARA TUBOS, CALDERAS, TANQUES, CUBAS Y ARTEFACTOS SIMILARES, INCLUSO VALVULAS REDUCTORAS DE PRESION Y VALVULAS REGULADAS TERMOSTATICAMENTE."
+                            },
+                            {
+                                "code": "291202",
+                                "name": "VENTA DE BOMBAS DE AGUA",
+                                "description": "ESTA CLASE INCLUYE LA VENTA DE BOMBAS DE AGUA DE 0.75 KW (1HP) O MAS. INCLUSO BOMBAS DE MANO, SUMERGIBLES, SISTEMA DE RIEGO, ETC."
+                            },
+                            {
+                                "code": "291401",
+                                "name": "FABRICACION DE HORNOS Y QUEMADORES",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE HOGARES Y HORNOS NO ELECTRICOS PARA TOSTAR, FUNDIR Y SOMETER A OTRO TRATAMIENTO TERMICO MENAS, PIRITAS, MINERALES NO METALIFEROS, METALES Y OTROS MATERIALES. FABRICACION DE: HOGARES Y HORNOS ELECTRICOS, INCLUSO HOGARES Y HORNOS POR INDUCCION Y DIELECTRICOS. EQUIPO INDUSTRIAL Y DE LABORATORIO PARA CALENTAMIENTO POR INDUCCION Y DIELECTRICO, NCLUSO INCINERADORES. QUEMADORES DE COMBUSTIBLE LIQUIDO, COMBUSTIBLE SOLIDO PULVERIZADO Y GAS. CARGADORES MECANICOS, PARRILLAS MECANICAS, DESCARGADORES MECANICOS DE CENIZAS Y APARATOS SIMILARES."
+                            },
+                            {
+                                "code": "291901",
+                                "name": "REPARACION DE EQUIPO DE REFRIGERACION Y CONGELACION",
+                                "description": "EN ESTA CLASE SE INCLUYE LA REPARACION Y MANTENIMIENTO DE EQUIPOS DE REFRIGERACION Y CONGELACION DE USO COMERCIAL TALES COMO VITRINAS Y MAQUINAS EXPENDEDORAS, INDUSTRIAL Y OTROS, YA SEAN BRINDADOS EN TALLERES O A DOMICILIO"
+                            },
+                            {
+                                "code": "291903",
+                                "name": "INSTALACION Y/O MANTENIMIENTO DE EQUIPO DE REFRIGERACION Y CONGELACION",
+                                "description": "ESTA CLASE INCLUYE UNICAMENTE LA INSTALACION Y/O MANTENIMIENTO DE LOS EQUIPOS DE REFRIGERACION Y CONGELACION DE USO COMERCIAL"
+                            },
+                            {
+                                "code": "292101",
+                                "name": "FABRICACION DE MAQUINARIA AGRICOLA",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE: TRACTORES UTILIZADOS EN ACTIVIDADES AGROPECUARIAS Y SILVICOLAS, TRACTORES DE MANEJO A PIE (DIRIGIDOS POR UNA PERSONA DESDE FUERA). TRACTORES EQUIPADOS CON CABRESTANTES Y ARTEFACTOS DESTINADOS A FACILITAR EL REMOLQUE Y MANEJO DE HERRAMIENTAS Y DE DISPOSITIVOS DE TOMA DE FUERZA PARA EL MOVIMIENTO DE TIERRA Y LA MANIPULACION DE OTROS MATERIALES. REMOLQUES Y SEMIRREMOLQUES DE CARGA Y DESCARGA AUTOMATICA PARA USO AGRICOLA. MAQUINAS UTILIZADAS EN LA AGRICULTURA, LA HORTICULTURA Y LA SILVICULTURA PARA PREPARAR LOS SUELOS, PLANTAR Y ABONAR LOS CULTIVOS, INCLUSO ARADOS, GRADAS, DESBROZADORAS, BINADORAS, SEMBRADORAS, ESPARCIDORAS DE ESTIERCOL, ACLARADORAS, ETC., AUTOPROPULSADAS O NO.SE INCLUYE LA MAQUINARIA DE TRACCION ANIMAL. MAQUINAS PARA LA RECOLECCION Y TRILLA: SEGADORAS TRILLADORAS; COSECHADORAS DE ALGODON, MAIZ, FRUTAS, RAICES Y TUBERCULOS; SEGADORAS (CORTADORAS DE CESPED Y DE HENO Y OTRAS SEGADORAS EQUIPADAS CON CUCHILLAS); ENFARDADORAS; MAQUINAS PARA LIMPIAR, SELECCIONAR Y CLASIFICAR HUEVOS, FRUTAS Y OTROS PRODUCTOS AGROPECUARIOS. MAQUINARIA AUTOPROPULSADA, DE ARRASTRE POR TRACTOR Y DE TRACCION ANIMAL. MAQUINAS DE ORDEÑAR. ASPERSORES DE USO AGRICOLA. OTRA MAQUINARIA UTILIZADA EN LA AGRICULTURA, LA CRIA DE ANIMALES, LA HORTICULTURA Y LA SILVICULTURA: MAQUINAS UTILIZADAS EN AVICULTURA, EQUIPO PARA LA PREPARACION DE PIENSOS, MAQUINAS EMPLEADAS EN LA APICULTURA ETC."
+                            },
+                            {
+                                "code": "292201",
+                                "name": "FABRICACION DE MAQUINAS HERRAMIENTA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: MAQUINAS HERRAMIENTA PARA TRABAJAR METALES Y OTROS MATERIALES, TALES COMO MADERA, PIEDRA, CORCHO, HUESO, EBONITA, PLASTICOS DUROS, VIDRIO EN FRIO, ETC. MAQUINAS HERRAMIENTA PARA TORNEAR, PERFORAR, FRESAR, CONFORMAR, CEPILLAR, TALADRAR, RECTIFICAR Y REALIZAR OTRAS OPERACIONES. MAQUINAS HERRAMIENTA PARA ESTAMPAR Y PRENSAR. PUNZONADORAS, PRENSAS HIDRAULICAS, CIZALLAS MECANICAS, CORTADORAS EN TIRAS, MACHACADORAS, MARTINETES, MAQUINAS DE FORJAR, ETC. BANCOS DE TREFILAR, MAQUINAS DE ATERRAJAR POR LAMINADO A PRESION Y MAQUINAS PARA TRABAJAR ALAMBRE. MAQUINAS HERRAMIENTA DE DISEÑO SENCILLO (POR EJEMPLO, PRENSAS A PEDAL), DE DISEÑO TRADICIONAL (POR EJEMPLO, ACCIONADAS A MANO Y POR MOTOR) Y DE DISEÑO MODERNO (POR EJEMPLO, DE MANDO NUMERICO Y PARA HACER PASAR EL PRODUCTO POR VARIAS ESTACIONES DE TRABAJO). MAQUINAS HERRAMIENTA PARA TRABAJAR DISTINTOS TIPOS DE MATERIAL MEDIANTE RAYOS LASER Y PROCESOS SIMILARES. MAQUINAS PARA CLAVAR, ENGRAPAR, ENCOLAR Y MONTAR DE OTRA MANERA MADERA, CORCHO, HUESO, EBONITA, PLASTICOS DUROS Y MATERIAS DURAS SIMILARES. MAQUINAS ELECTRICAS Y DE GAS PARA SOLDADURA AUTOGENA, SOLDADURA DURA Y SOLDADURA BLANDA, CON O SIN CAPACIDAD PARA CORTAR METAL.SE INCLUYEN LAS MAQUINAS QUE UTILIZAN RAYOS LASER Y OTROS HACES DE LUZ Y DE FOTONES, ONDAS ULTRASONICAS, IMPULSOS MAGNETICOS Y ARCOS DE PLASMA. HERRAMIENTAS DE MANO CON MOTOR, ELECTRICO O NO ELECTRICO, Y DE FUNCIONAMIENTO CON AIRE COMPRIMIDO. TALADRADORAS ROTATORIAS Y DE PERCUSION, SIERRAS DE CADENA, LIMADORAS, MAQUINAS EQUIPADAS CON ESCOBILLAS DE ALAMBRE, MARTILLOS MECANICOS, REMACHADORAS, CORTADORAS DE LAMINAS DE METAL, ETC. PRENSAS PARA LA FABRICACION DE TABLEROS DE PARTICULAS Y FIBRAS DE MADERA U OTROS MATERIALES LEÑOSOS PARA LA CONSTRUCCION, Y OTRA MAQUINARIA PARA TRATAR LA MADERA Y EL CORCHO. PARTES Y ACCESORIOS DE LAS MAQUINAS HERRAMIENTA INCLUIDAS EN ESTA CLASE, TALES COMO DISPOSITIVOS PARA SUJETAR LOS MATERIALES QUE SON OBJETO DE TRABAJO (MANDRILES Y PLATOS DE MANDRIL), CABEZALES DIVISORIOS Y OTROS ACCESORIOS ESPECIALES PARA MAQUINAS HERRAMIENTA."
+                            },
+                            {
+                                "code": "292301",
+                                "name": "FABRICACION DE MAQUINARIA METALURGICA",
+                                "description": "ESTA CLASE ABARCA LA FABRICACION DE MAQUINAS Y EQUIPO PARA EL MANEJO DE METALES EN CALIENTE: CONVERTIDORES, LINGOTERAS, CALDEROS DE COLADA Y MAQUINAS DE FUNDIR DEL TIPO UTILIZADO EN LA METALURGIA Y EN TALLERES DE FUNDICION DE METALES. FABRICACION DE MAQUINAS LAMINADORAS DE METAL Y DE LOS RODILLOS PARA ESAS MAQUINAS."
+                            },
+                            {
+                                "code": "292401",
+                                "name": "FABRICACION DE MAQUINARIA PARA LA EXPLOTACION DE MINAS Y CANTERAS Y PARA OBRAS DE CONSTRUCCION",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: MAQUINARIA DE ELEVACION Y MANIPULACION DISEÑADA ESPECIALMENTE PARA USO EN OBRAS SUBTERRANEAS, COMO POR EJEMPLO EQUIPO DE CINTAS TRANSPORTADORAS. MAQUINARIA PARA PERFORAR E HINCAR, DESTINADA O NO A USOS SUBTERRANEOS. MAQUINARIA PARA EL TRATAMIENTO DE MINERALES MEDIANTE CRIBADO, CLASIFICACION, SEPARACION, LAVADO, TRITURACION, PULVERIZACION, MEZCLA, AMASADO Y PROCESOS SIMILARES, INCLUSO MEZCLADORAS DE HORMIGON Y MORTERO, MAQUINAS DE MOLDEAMIENTO, EXTRUSORAS, ETC. TRACTORES DE ORUGA Y TRACTORES UTILIZADOS EN OBRAS DE CONSTRUCCION Y EN LA EXPLOTACION DE MINAS. TOPADORAS CORRIENTES Y DE PALA ANGULAR. OTRAS MAQUINAS PARA MOVIMIENTO DE TIERRA, AUTOPROPULSADAS O NO: EXPLA NADORAS, NIVELADORAS, TRAILLAS, PALAS MECANICAS, EXCAVADORAS, CARGADORAS DE CUCHARON, APISONADORAS Y APLANADORAS. MAQUINAS PARA HINCAR Y ARRANCAR PILOTES, Y MAQUINAS COMPACTADORAS. MAQUINAS UTILIZADAS EN LA CONSTRUCCION NO CLASIFICADAS NI INCLUIDAS EN OTRA PARTE: ESPARCIDORAS DE HORMIGON, EQUIPO DE CONSTRUCCION DE CAMINOS (POR EJEMPLO, ESPARCIDORAS DE ASFALTO), MAQUINARIA PARA PAVIMENTAR CON HORMIGON (ESTRIADORAS, ALISADORAS, ESCAQUEADORAS), ETC. PALAS PARA TOPADORAS CORRIENTES Y DE PALA ANGULAR Y OTRAS PARTES ESPECIALES DE LAS MAQUINAS MENCIONADAS ANTERIORMENTE."
+                            },
+                            {
+                                "code": "292402",
+                                "name": "PERFORACION DE POZOS",
+                                "description": "SE INCLUYE LA PERFORACION DE POZOS DE AGUA Y PETROLEO, ASI COMO TODO LA LOGISTICA NECESARIA DESDE LA PREPARACION HASTA LA OBTENCION DEL PRODUCTO BUSCADO."
+                            },
+                            {
+                                "code": "292501",
+                                "name": "FABRICACION DE MAQUINARIA PARA LA ELABORACION DE ALIMENTOS,BEBIDAS Y TABACO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE MAQUINARIA UTILIZADA PRINCIPALMENTE EN LA INDUSTRIA LECHERA: DESCREMADORAS; ELABORACION DE LA LECHE, TRANSFORMACION DE LA LECHE (MANTEQUERAS, MALAXADORAS Y MOLDEADORAS); PARA HACER QUESOS. TAMBIEN INCLUYE MAQUINARIA UTILIZADA PRINCIPALMENTEEN LA INDUSTRIA DE LA MOLIENDA DE GRANOS (LIMPIAR, SELECCIONAR Y CLASIFICAR SEMILLAS, GRANOS Y LEGUMINOSAS SECAS); MAQUINARIA PARA PRODUCIR HARINAS, SEMOLAS Y OTROS PRODUCTOS MOLIDOS, PRENSAS, TRITURADORAS Y MAQUINAS SIMILARES UTILIZADAS EN LA ELABORACION DE VINO, SIDRA, JUGOS DE FRUTAS Y BEBIDAS SIMILARES. MAQUINARIA ESPECIAL PARA USO EN PANADERIA PARAPREPARAR MACARRONES, ESPAGUETIS Y PRODUCTOS SIMILARES: MEZCLADORAS, FRACCIONADORAS Y MOLDEADORAS DE MASA, CORTADORAS, MAQUINAS PARA DEPOSITAR TORTAS, ETC. INSTALACIONES Y EQUIPO, INCLUSO DE CALEFACCION ELECTRICA, PARA EL TRATAMIENTO DE ALIMENTOS Y BEBIDAS; PARA PASTEURIZAR, CONDENSAR Y COCER LECHE; CUBAS PARA ELABORAR Y CURAR QUESOS; CUBAS PARA MACERAR Y CONDENSAR Y PARA OTRAS OPERACIONES DE CALENTAMIENTO Y ENFRIAMIENTO; AUTOCLAVES E INSTALACIONES PARA VAPORIZACION, EBULLICION, COCCION, FREIDURA Y DESHIDRATACION DE ALIMENTOS. HORNOS NO ELECTRICOS DE PANADERIA. MAQUINARIA PARA LA EXTRACCION Y PREPARACION DE GRASAS Y ACEITES FIJOS DE ORIGEN ANIMAL Y VEGETAL. MAQUINARIA PARA LA PREPARACION DE TABACO Y LA ELABORACION DE CIGARRILLOS Y TABACO PARA PIPA, DE MASCAR Y RAPE."
+                            },
+                            {
+                                "code": "292601",
+                                "name": "FABRICACION MAQUINARIA PARA LA ELABORACION DE PRODUCTOS TEXTILES, PRENDAS DE VESTIR Y CUEROS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE: MAQUINAS DE PREPARACION DE FIBRAS TEXTILES (FIBRAS NATURALES Y ARTIFICIALES) PARA LA HILATURA, MAQUINAS PARA TRANSFORMAR LAS MECHAS EN HILOS, INCLUSO MANUARES DE RETORCER JUNTOS DOS O MAS HILOS PARA OBTENER HILOS RETORCIDOS Y CABLEADOS. MAQUINAS DE PREPARACION DE HILADOS TEXTILES PARA SU USO EN TELARES CORRIENTES Y TELARES PARA TEJIDOS DE PUNTO. MAQUINARIA PARA LAVAR, BLANQUEAR, TEÑIR, APRESTAR, ACABAR, REVESTIR E IMPREGNAR HILADOS TEXTILES, TELAS Y ARTICULOS CONFECCIONADOS DE MATERIALES TEXTILES; MAQUINAS PARA APLICAR LA PASTA AL TEJIDO U OTRO MATERIAL DE BASE UTILIZADAS EN LA FABRICACION DE LINOLEO Y OTROS MATERIALES SIMILARES PARA REVESTIMIENTO DE PISOS; MAQUINAS DE ENROLLAR, DESENROLLAR, PLEGAR, CORTAR Y CALAR TELAS. MAQUINAS DE PLANCHAR, INCLUSO PLANCHAS DE FUSION. MAQUINAS DE LAVAR Y SECAR DEL TIPO UTILIZADO EN LAVANDERIA, Y MAQUINAS DE LIMPIAR EN SECO. MAQUINAS DE COSER Y CABEZALES DE MAQUINAS DE COSER, SEAN O NO PARA USO DOMESTICO: MAQUINAS PARA COSER MATERIAS TEXTILES, CUERO, PIELES, ETC.; PARA CONFECCIONAR PRENDAS DE VESTIR, CALZADO, BORDADOS, MALETAS, CUBRECABEZAS, SACOS, ETC. AGUJAS PARA MAQUINAS DE COSER. MAQUINAS PARA LA MANUFACTURA Y EL ACABADO DE FIELTRO Y DE TEXTILES NO TEJIDOS, EN PIEZAS O EN CORTES CON FORMAS DETERMINADAS, INCLUSO MAQUINAS PARA LA FABRICACION DE SOMBREROS DE FIELTRO. MAQUINAS PARA PREPARAR, CURTIR Y TRABAJAR CUEROS Y PIELES,INCLUSO DEPILADORAS,DESCARNADORAS, BATANES DE MAZO Y DE TAMBOR, TUNDIDORAS Y MAQUINAS DE ACABAR, TALES COMO MAQUINAS DE CEPILLAR, GLASEAR Y GRANEAR EL CUERO. MAQUINARIA PARA FABRICAR Y REPARAR CALZADO Y OTROS ARTICULOS DE CUERO O PIEL."
+                            },
+                            {
+                                "code": "292701",
+                                "name": "FABRICACION DE ARMAS Y MUNICIONES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: TANQUES Y OTROS VEHICULOS DE COMBATE, INCLUSO CARROS BLINDADOS, VEHICULOS PARA LA RECUPERACION DE TANQUES Y VEHICULOS BLINDADOS DE ABASTECIMIENTO. ARMAS PESADAS, PIEZAS DE ARTILLERIA, CAÑONES MOVILES, INCLUSO CAÑONES MONTADOS EN VAGONES DE FERROCARRIL; LANZAPROYECTILES Y LANZACOHETES; TUBOS LANZATORPEDOS, LANZADORES DE CARGAS DE PROFUNDIDAD, AMETRALLADORAS PESADAS. ARMAS PORTATILES, COMO AMETRALLADORAS LIGERAS, FUSILES, CARABINAS, ESCOPETAS, REVOLVERES Y PISTOLAS. ARMAS LIGERAS DESTINADAS AL USO DE LAS FUERZAS DE DEFENSA, LA POLICIA, OTROS SERVICIOS ORGANIZADOS, CAZADORES Y DEPORTISTAS. ESCOPETAS Y PISTOLAS DE AIRE Y GAS COMPRIMIDO. ARMAS DE FUEGO QUE DISPARAN BALAS DE FOGUEO, PISTOLAS PARA LANZAR BENGALAS DE SEÑALES, PISTOLAS DE MATARIFE, PISTOLAS SIMILARES DE EMBOLO CAUTIVO Y OTRAS \"ARMAS DE FUEGO\". MUNICIONES PARA LAS ARMAS DESCRITAS ANTERIORMENTE Y MUNICIONES PROPULSADAS POR OTROS MEDIOS: BOMBAS, GRANADAS, TORPEDOS, MINAS, COHETES Y MUNICIONES SIMILARES DE GUERRA; PROYECTILES Y MISILES DE USO MILITAR."
+                            },
+                            {
+                                "code": "292901",
+                                "name": "FABRICACION DE OTROS TIPOS DE MAQUINARIA DE USO ESPECIAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE MAQUINARIA Y EQUIPO DE USO ESPECIAL NO CLASIFICADO EN OTRA PARTE, TAL COMO: MAQUINAS PARA EXTRUIR, ESTIRAR, TEJER Y CORTAR FIBRAS, HILADOS Y OTROS MATERIALES TEXTILES DE ORIGEN ARTIFICIAL. MAQUINAS PARA LA ELABORACION DE CAUCHO Y DE PLASTICOS Y PARA LA FABRICACION DE PRODUCTOS DE ESOS MATERIALES MAQUINARIA PARA LAS INDUSTRIAS DE LA PASTA DE PAPEL, EL PAPEL Y EL CARTON, CORTADORAS, PULVERIZADORAS Y TRITURADORAS DESTINADAS A PREPARAR MADERA, BAMBU, ESPARTO, PAJA, TRAPOS, DESECHOS DE PAPEL, ETC. MAQUINARIA PARA LA PRODUCCION DE PAPEL DE TAMAÑOS Y FORMAS DETERMINADOS Y PARA LA PRODUCCION DE ARTICULOS TALES COMO SOBRES, BOLSAS DE PAPEL, CAJAS Y CAJONES DE CARTON. MAQUINARIAPARA LA FUNDICION DE CARACTERES DE IMPRENTA. MAQUINARIA PARA IMPRIMIR (POR EJEMPLO, PRENSAS CORRIENTES, DE PLATINA, DE CILINDROS Y ROTATIVAS, INCLUSO IMPRESORAS ESPECIALES, TALES COMO MAQUINAS PARA SERIGRAFIA Y PARA EL ESTAMPADO DE HILADOS, CORCHO, PRENDAS DE VESTIR Y OTROS ARTICULOS NO USUALES); MAQUINAS AUXILIARES DE LA IMPRESION (POR EJEMPLO, CARGADORAS, ALIMENTADORAS, PLEGADORAS, ENCOLADORAS, ENGRAPADORAS, ETC.). MAQUINAS PARA ENCUADERNACION, INCLUSO COSEDORAS DE LIBROS, ENCUADERNADORAS PARA EL MONTAJE DE LOMOS DE ESPIRAL PLASTICA Y METALICA Y FOLIADORAS"
+                            },
+                            {
+                                "code": "293001",
+                                "name": "FABRICACION DE APARATOS DE USO DOMESTICO N.C.P.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: APARATOS ELECTRICOS DE USO DOMESTICO: MANTAS ELECTRICAS, REFRIGERADORES Y CONGELADORES, LAVAPLATOS, EQUIPO DE LAVANDERIA (LAVARROPAS, LAVADORAS SECADORAS Y SECADORAS), ASPIRADORAS, ENCERADORAS DE PISOS, ELIMINADORAS DE DESPERDICIOS, APARATOS PARA PREPARAR Y ELABORAR ALIMENTOS (MOLEDORAS, LICUADORAS, EXPRIMIDORAS, ABRELATAS, ETC.) Y OTROS APARATOS ELECTRICOS DE USO DOMESTICO (MAQUINAS DE AFEITAR ELECTRICAS, CEPILLOS DENTALES ELECTRICOS, AFILADORAS DE CUCHILLOS, CAMPANAS DE VENTILACION Y DE ABSORCION DE HUMOS, ETC.). APARATOS TERMOELECTRICOS DE USO DOMESTICO, TALES COMO CALENTADORES DE AGUA INSTANTANEOS Y DE ACUMULACION Y CALENTADORES DE INMERSION; APARATOS TERMOELECTRICOS DE PELUQUERIA (SECADORES, PEINES, CEPILLOS Y RIZADORES); PLANCHAS ELECTRICAS; CALENTADORES DE AMBIENTE Y VENTILADORES DE USO DOMESTICO; APARATOS DE COCINA (HORNOS CORRIENTES Y DE MICROONDAS, COCINILLAS ELECTRICAS, PLANCHAS DE COCINAR, TOSTADORES, CAFETERAS Y TETERAS, SARTENES, ASADORES, PARRILLAS, ETC.); Y RESISTORES PARA CALEFACCION ELECTRICA. CALENTADORES NO ELECTRICOS DE USO DOMESTICO PARA AMBIENTES COCINILLAS, PARRILLAS, COCINAS E INSTALACIONES DOMESTICAS DE CALEFACCION CENTRAL. CALENTADORES DE AGUA, APARATOS DE COCINA Y CALENTADORES DE PLATOS NO ELECTRICOS"
+                            },
+                            {
+                                "code": "300001",
+                                "name": "FABRICACION DE MAQUINARIA DE OFICINA, CONTABILIDAD E INFORMATICA",
+                                "description": "ESTA CLASE COMPRENDE LAS SIGUIENTES ACTIVIDADES: FABRICACION DE MAQUINAS CALCULADORAS, FABRICACION DE MAQUINAS DE SUMAR Y MAQUINAS REGISTRADORAS, FABRICACION DE CALCULADORAS, ELECTRONICAS O NO, FABRICACION DE MAQUINAS PARA EL FRANQUEO Y LA MANIPULACION DE CORRESPONDENCIA (MAQUINAS PARA LLENAR Y CERRAR SOBRES Y PARA IMPRIMIR DIRECCIONES, MAQUINAS PARA ABRIR, CLASIFICAR Y ESCANEAR CORRESPONDENCIA), MAQUINAS DE ENCOLAR FABRICACION DE MAQUINAS DE ESCRIBIR, FABRICACION DE MAQUINAS DE ESTENOTIPIA, FABRICACION DE EQUIPO DE ENCUADERNACION DEL TIPO UTILIZADO EN OFICINAS (ES DECIR, PARA ENCUADERNAR CON PLASTICO O CON CINTA ADHESIVA), FABRICACION DE MAQUINAS PARA RELLENAR CHEQUES, FABRICACION DE MAQUINAS PARA CONTAR Y ENVOLVER MONEDAS, FABRICACION DE AFILADORES DE LAPICES, FABRICACION DE GRAPADORAS Y QUITA GRAPAS, FABRICACION DE MAQUINAS DE VOTACION, FABRICACION DE PORTARROLLOS PARA CINTA ADHESIVA, FABRICACION DE PUNZONES, FABRICACION DE MAQUINAS REGISTRADORAS ACCIONADAS MECANICAMENTE, FABRICACION DE FOTOCOPIADORAS, FABRICACION DE CARTUCHOS DE TINTA, FABRICACION DE PIZARRAS, ENCERADOS Y TABLEROS PARA ESCRIBIR CON ROTULADOR, FABRICACION DE DICTAFONOS"
+                            },
+                            {
+                                "code": "311001",
+                                "name": "FABRICACION DE MOTORES, GENERADORES Y TRANSFORMADORES ELECTRICOS, PARTES Y ACCES",
+                                "description": "ESTA CLASE COMPRENDE LA FABRICACION DE TRANSFORMADORES DE FUERZA, TRANSFORMADORES DISTRIBUIDORES Y TRANSFORMADORES PARA USOS ESPECIALES; APARATOS DE CONMUTACION; RELES Y CONTROLES INDUSTRIALES. EL EQUIPO ELECTRICO FABRICADO EN ESTA CLASE ESTA DESTINADO A ALTOS VOLTAJES DE DISTRIBUCION. SE INCLUYEN LAS SIGUIENTES ACTIVIDADES: FABRICACION DE TRANSFORMADORES, FABRICACION DE TRANSFORMADORES PARA SOLDADURA CON ARCO ELECTRICO, FABRICACION DE REACTANCIAS (ES DECIR, TRANSFORMADORES) PARA LAMPARAS FLUORESCENTES, FABRICACION DE TRANSFORMADORES DE SUBESTACION PARA LA DISTRIBUCION DE ENERGIA ELECTRICA, FABRICACION DE REGULADORES DEL VOLTAJE DE TRANSMISION Y DISTRIBUCION FABRICACION DE MOTORES ELECTRICOS (EXCEPTO LOS MOTORES DE ARRANQUE PARA MOTORES DE COMBUSTION INTERNA), FABRICACION DE GENERADORES DE FUERZA (EXCEPTO LOS ALTERNADORES CARGADOS POR BATERIAS PARA MOTORES DE COMBUSTION INTERNA), FABRICACION DE MOTORES GENERADORES (EXCEPTO TURBOGENERADORES), FABRICACION DE GENERADORES DE IMPULSION, REBOBINADO DE INDUCIDOS EN FABRICA, FABRICACION DE DISYUNTORES, FABRICACION DE LIMITADORES DE SOBRETENSION (PARA VOLTAJES DE DISTRIBUCION), FABRICACION DE PANELES DE CONTROL PARA LA DISTRIBUCION DE ENERGIA ELECTRICA, FABRICACION DE RELES ELECTRICOS, FABRICACION DE CONDUCTOS PARA CUADROS DE DISTRIBUCION, FABRICACION DE FUSIBLES ELECTRICOS, FABRICACION DE EQUIPO DE CONMUTACION, FABRICACION DE CONMUTADORES (EXCEPTO LOS DE PULSADOR, DE RESORTESOLENOIDALES,OSCILANTES)"
+                            },
+                            {
+                                "code": "313001",
+                                "name": "FABRICACION DE HILOS Y CABLES AISLADOS",
+                                "description": "ESTA CLASE ABARCA LA FABRICACION DE: HILOS Y CABLES (INCLUSO CABLES COAXIALES) RECUBIERTOS DE MATERIAL AISLANTE (INCLUSO LAQUEADOS Y ANODIZADOS) Y OTROS CONDUCTORES DE ELECTRICIDAD AISLADOS, ESTEN PROVISTOS O NO DE CONECTORES. PLACAS DE METAL AISLADAS, COMO LAS QUE SE USAN EN MAQUINAS DE GRAN POTENCIA Y EN EQUIPOS DE CONTROL. CABLES DE FIBRA OPTICA COMPUESTOS DE FIBRAS RECUBIERTAS DE MATERIAL AISLANTE, ESTEN CONECTADOS O NO A CONDUCTORES ELECTRICOS Y PROVISTOS O NO DE CONECTORES."
+                            },
+                            {
+                                "code": "314001",
+                                "name": "FABRICACION DE PILAS, BATERIAS Y ACUMULADORES",
+                                "description": "ESTA CLASE COMPRENDE LA FABRICACION DE BATERIAS NO RECARGABLES Y DE BATERIAS RECARGABLES. SE INCLUYEN LAS SIGUIENTES ACTIVIDADES: FABRICACION DE PILAS Y BATERIAS PRIMARIAS, (PILAS DE DIOXIDO DE MANGANESO, DIOXIDO DE MERCURIO, OXIDO DE PLATA, ETC.), FABRICACION DE ACUMULADORES ELECTRICOS Y PARTES DE ACUMULADORES: (SEPARADORES, CONTENEDORES, TAPAS), FABRICACION DE PILAS DE PLOMO-ACIDO, FABRICACION DE PILAS DE NIQUEL-CADMIO, FABRICACION DE PILAS DE NIQUEL E HIDRURO METALICO, FABRICACION DE PILAS DE LITIO, FABRICACION DE PILAS SECAS, FABRICACION DE PILAS HUMEDAS"
+                            },
+                            {
+                                "code": "315001",
+                                "name": "FABRICACION DE LAMPARAS ELECTRICAS Y EQUIPO DE ILUMINACION",
+                                "description": "ESTA CLASE COMPRENDE LA FABRICACION DE BOMBILLAS Y TUBOS ELECTRICOS Y SUS PIEZAS Y COMPONENTES (EXCEPTO AMPOLLAS DE VIDRIO PARA BOMBILLAS) Y DE LAMPARAS ELECTRICAS Y SUS PIEZAS Y COMPONENTES (EXCEPTO DISPOSITIVOS DE CABLEADO PORTADORES DE CORRIENTE). SE INCLUYEN LAS SIGUIENTES ACTIVIDADES: FABRICACION DE LAMPARAS, TUBOS Y BOMBILLAS DE DESCARGA, INCANDESCENTES, FLUORESCENTES, DE RAYOS ULTRAVIOLETAS, DE RAYOS INFRARROJOS, ETCETERA, FABRICACION DE LAMPARAS DE TECHO, FABRICACION DE ARAÑAS COLGANTES, FABRICACION DE LAMPARAS DE MESA, FABRICACION DE JUEGOS DE BOMBILLAS PARA DECORAR ARBOLES DE NAVIDAD, FABRICACION DE TRONCOS ELECTRICOS PARA CHIMENEA, FABRICACION DE LAMPARAS DE DESTELLOS, FABRICACION DE LAMPARAS ELECTRTRICAS CONTRA INSECTOS, FABRICACION DE LINTERNAS (P. EJ., DE CARBURO, ELECTRICAS, DE GAS, DE GASOLINA DE QUEROSENO), FABRICACION DE PROYECTORES DE TEATRO, FABRICACION DE LAMPARAS PARA LA ILUMINACION DE LAS CALLES (EXCEPTO SEÑALES DE TRAFICO), FABRICACION DE EQUIPO DE ILUMINACION PARA EQUIPO DE TRANSPORTE, SE INCLUYEN TAMBIEN LAS SIGUIENTES ACTIVIDADES: FABRICACION DE EQUIPO DE ILUMINACION NO ELECTRICO"
+                            },
+                            {
+                                "code": "319001",
+                                "name": "FABRICACION DE OTROS TIPOS DE EQUIPO ELECTRICO N.C.P.",
+                                "description": "ESTA CLASE COMPRENDE LA FABRICACION DE DIVERSOS TIPOS DE EQUIPO ELECTRICO, EXCEPTO MOTORES, GENERADORES Y TRANSFORMADORES, PILAS, BATERIAS Y ACUMULADORES, CABLES Y DISPOSITIVOS DE CABLEADO, EQUIPO DE ILUMINACION O APARATOS DE USO DOMESTICO. SE INCLUYEN LAS SIGUIENTES ACTIVIDADES: FABRICACION DE CARGADORES DE PILAS DE ESTADO SOLIDO, FABRICACION DE DISPOSITIVOS ELECTRICOS DE APERTURA Y CIERRE DE PUERTAS, FABRICACION DE TIMBRES ELECTRICOS, FABRICACION DE LIMPIADORES ULTRASONICOS (EXCEPTO LOS DE USO ODONTOLOGICO Y DE LABORATORIO), FABRICACION DE CAMAS BRONCEADORAS, FABRICACION DE INVERTIDORES, RECTIFICADORES CELULAS ENERGETICAS, UNIDADDES DE SUMINISTRO DE POTENCIA REGULADA Y NO REGULADA DE ESTADO SOLIDO FABRICACION DE UNIDADES DE SUMINISTRO ININTERRUMPIDO DE ENERGIA, FABRICACION DE LIMITADORES DE SOBRETENSION (EXCEPTO PARA VOLTAJES DE DISTRIBUCION), FABRICACION DE CABLES PARA APARATOS, CABLES ALARGADORES, Y OTROS JUEGOS DE CABLES ELECTRICOS CON CABLE AISLADO Y ENCHUFE, FABRICACION DE ELECTRODOS Y CONTACTOS DE CARBONO Y GRAFITO Y OTROS PRODUCTOS ELECTRICOS DE CARBON Y GRAFITO, FABRICACION DE ACELERADORES DE PARTICULAS, FABRICACION DE CAPACITORES, RESISTORES, CONDENSADORES Y COMPONENTES ELECTRICOS SIMILARES, FABRICACION DE ELECTROIMANES, FABRICACION DE SIRENAS, FABRICACION DE MARCADORES ELECTRONICOS, FABRICACION DE SEÑALES ELECTRICAS, FABRICACION DE EQUIPO ELECTRICO DE SEÑALIZACION, COMO SEMAFOROS Y SEÑALES PEATONALES, FABRICACION DE AISLADORES ELECTRICOS (EXCEPTO LOS DE VIDRIO O PORCELANA), FABRICACION DE EQUIPO ELECTRICO DE SOLDADURA AUTOGENA Y DE SOLDADURA BLANDA, INCLUIDOS SOLDADORES MANUALES"
+                            },
+                            {
+                                "code": "321001",
+                                "name": "MANUFACTURA O FABRICACION DE OTROS COMPONENTES ELECTRONICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE OTROS COMPONENTES ELECTRONICOS TALESCOMO CIRCUITOS INTEGRADOS Y MICROENSAMBLADURAS ELECTRONICAS DE MODULO MOLDEADO,DE MICROMODULO Y DE TIPO SIMILAR. ASI COMO MICROCHIPS, FRENOS ELECTRICOS, SENSORES, CAJAS DE CONTROL PARA CAMBIOS ELECTRONICOS Y CONTROLES PARA MOTOR DE VEHICULOS"
+                            },
+                            {
+                                "code": "321002",
+                                "name": "DISEÑO DE COMPONENTES ELECTRONICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE SOLAMENTE EL DISEÑO DE PARTES Y COMPONENTES ELECTRONICOS DE TODO TIPO."
+                            },
+                            {
+                                "code": "322001",
+                                "name": "FABRICACION DE TRANSMISORES Y RECEPTORES DE RADIO Y TELEVISION",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: APARATOS PARA RADIODIFUSION MEDIANTE ONDAS ELECTROMAGNETICAS, SIN CONEXION DE LINEA. TRANSMISORES DE TELEVISION, CON O SIN CONEXION DE LINEA, INCLUSO REPETIDORES Y TRANSMISORES DE TELEVISION PARA USO INDUSTRIAL. TRANSMISORES PARA RADIOTELEFONIA Y RADIOTELEGRAFIA, ESTEN PROVISTOS O NO DE APARATOS DE RECEPCION, GRABACION Y REPRODUCCION DE SONIDO: EMISORES FIJOS Y EMISORES -RECEPTORES, APARATOS DE RADIOTELEFONIA PARA EQUIPO DE TRANSPORTE, RADIOTELEFONOS, OTROS RESPONDEDORES, APARATOS RADIOTELEGRAFICOS DE TIPO \"FACSIMILE\", ETC. CAMARAS DE TELEVISION DE TODO TIPO. APARATOS PARA TELEFONIA Y TELEGRAFIA CON HILOS, INCLUSO APARATOS PARA SISTEMAS DE LINEA DE CORRIENTE PORTADORA; RECEPTORES DE RADIOTELEFONIA Y RADIOTELEGRAFIA, INCLUSO APARATOS COMBINADOS CON DISPOSITIVOS DE GRABACION Y REPRODUCCION DE SONIDO O CON UN RELOJ. SE INCLUYEN LOS TELEFONOS, CONMUTADORES Y CENTRALES AUTOMATICOS Y NO AUTOMATICOS; MANIPULADORES MORSE Y DE TIPO MORSE, OTROS TRANSMISORES TELEGRAFICOS, GRABADORES DE TIPO MORSE, RECEPTORES?IMPRESORES, TRANSMISORES Y RECEPTORES DE FOTOTELEGRAFIA."
+                            },
+                            {
+                                "code": "331101",
+                                "name": "FABRICACION DE PROTESIS EN GENERAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION Y COMERCIALIZACION DE DIENTES POSTIZOS, EXTREMIDADES ARTIFICIALES Y OTRAS PARTES ARTIFICIALES DEL CUERPO HUMANO.ESTA ACTIVIDAD NO ESTA AFECTA AL IMPUESTO SOBRE LAS VENTAS SEGUN DECRETO 21719-H-S-MEIC PUBLICADO EN LA GACETA 238 DEL 11 DE DICIEMBRE DE 1992"
+                            },
+                            {
+                                "code": "331102",
+                                "name": "FABRICACION Y COMERCIALIZACION DE EQUIPO MEDICO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: INSTRUMENTOS Y APARATOS DE USO PRACTICO Y CIENTIFICO EN MEDICINA, CIRUGIA, ODONTOLOGIA Y VETERINARIA, INCLUSO APARATOS ELECTRONICOS PARA DIAGNOSTICO, TALES COMO ELECTROCARDIO-GRAFOS, TORNOS DE DENTISTA, INSTRUMENTOS DE OFTALMOLOGIA, INCLUSO EQUIPO PARA REALIZAR EXAMENES DE LA VISTA; JERINGAS, CON O SIN AGUJAS; AGUJAS UTILIZADAS EN MEDICINA Y OTROS INSTRUMENTOS Y APARATOS, INCLUSO INSTRUMENTOS OPTICOS TALES COMO ESPEJOS Y REFLECTORES, ENDOSCOPIOS, ETC. APARATOS BASADOS EN EL USO DE RAYOS X Y EN LA EMISION DE RAYOS ALFA, BETA Y GAMMA, DESTINADOS O NO A LA MEDICINA O LA VETERINARIA, INCLUSO TUBOS DE RAYOS X, GENERADORES DE ALTA TENSION, PANELES, MESAS Y PANTALLAS DE CONTROL , Y ARTEFACTOS SIMILARES. ESTERILIZADORES. APARATOS DE MECANOTERAPIA; MAQUINAS DE MASAJE; APARATOS PARA PRUEBAS PSICOLOGICAS; APARATOS DE OZONOTERAPIA, OXIGENOTERAPIA Y RESPIRACION ARTIFICIAL, Y OTROS APARATOS RESPIRATORIOS TERAPEUTICOS; OTROS APARATOS DE RESPIRACION Y MASCARAS DE GAS, EXCEPTO LAS DE SIMPLE PROTECCION."
+                            },
+                            {
+                                "code": "331103",
+                                "name": "FABRICACION Y COMERCIALIZACION DE ZAPATOS ORTOPEDICOS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION Y COMERCIALIZACION DE CALZADO Y PLANTILLAS ORTOPEDICAS HECHOS O ADAPTADOS A LA MEDIDA PARA CORREGIR DEFECTOS FISICOS, CON RECETA MEDICA."
+                            },
+                            {
+                                "code": "331201",
+                                "name": "FABRICACION DE EQUIPOS PARA MEDIR, VERIFICAR, Y NAVEGAR Y DE EQUIPOS DE CONTROL",
+                                "description": "ESTA CLASE COMPRENDE LA FABRICACION DE SISTEMAS E INSTRUMENTOS AERONAUTICOS Y NAUTICOS DE BUSQUEDA, DETECCION, NAVEGACION Y ORIENTACION; DISPOSITIVOS AUTOMATICOS DE CONTROL Y REGULACION PARA APARATOS DE USO DOMESTICO, COMO LOS DE CALEFACCION, ACONDICIONAMIENTO DE AIRE Y REFRIGERACION Y APARATOS SIMILARES; INSTRUMENTOS Y DISPOSITIVOS PARA MEDIR, MOSTRAR, INDICAR, REGISTRAR, TRANSMITIR Y CONTROLAR VARIABLES DE PROCESOS INDUSTRIALES, COMO LA TEMPERATURA, LA HUMEDAD, LA PRESION, EL VACIO, LA COMBUSTION, EL FLUJO, EL NIVEL, LA VISCOSIDAD, LA DENSIDAD, LA ACIDEZ, LA CONCENTRACION Y LA ROTACION; CONTADORES DE REGISTRO DE FLUIDOS; INSTRUMENTOS PARA MEDIR Y COMPROBARLAS CARACTERISTICAS DE LA ELECTRICIDAD Y LAS SEÑALES ELECTRICAS; INSTRUMENTOS Y SISTEMAS INSTRUMENTALES PARA EL ANALISIS EN LABORATORIO DE LA COMPOSICION QUIMICA O FISICA O LA CONCENTRACION DE MUESTRAS DE MATERIALES SOLIDOS, FLUIDOS, GASEOSOS O COMPUESTOS Y OTROS INSTRUMENTOS DE MEDICION Y DE PRUEBA Y PIEZAS DE ESOS INSTRUMENTOS. SE INCLUYE ASIMISMO LA FABRICACION DE EQUIPO NO ELECTRICO DE MEDICION, PRUEBA NAVEGACION Y CONTROL (EXCEPTO HERRAMIENTAS MECANICAS SENCILLAS)"
+                            },
+                            {
+                                "code": "332001",
+                                "name": "FABRICACION DE INSTRUMENTOS OPTICOS Y EQUIPO FOTOGRAFICO",
+                                "description": "ESTA CLASE COMPRENDE LA FABRICACION DE INSTRUMENTOS Y LENTES OPTICOS, COMO BINOCULARES, MICROSCOPIOS (EXCEPTO LOS ELECTRONICOS Y PROTONICOS), TELESCOPIOS, PRISMAS Y LENTES (EXCEPTO LAS OFTALMICAS) Y LA FABRICACION DE EQUIPO DE FOTOGRAFIA, COMO CAMARAS Y FOTOMETROS. SE INCLUYEN LAS SIGUIENTES ACTIVIDADES: FABRICACION DE LENTES Y PRISMAS, FABRICACION DE MICROSCOPIOS OPTICOS, BINOCULARES Y TELESCOPIOS, FABRICACION DE ESPEJOS OPTICOS, FABRICACION DE INSTRUMENTOS DE AUMENTO OPTICOS, FABRICACION DE INSTRUMENTOS OPTICOS DE PRECISION PARA MECANICOS, FABRICACION DE COMPARADORES OPTICOS, FABRICACION DE DISPOSITIVOS OPTICOS DE PUNTERIA, FABRICACION DE POSICIONADORES OPTICOS,FABRICACION DE DISPOSITIVOS E INSTRUMENTOS OPTICOS DE MEDICION Y VERIFICACION, FABRICACION DE CAMARAS DE PELICULA Y DIGITALES, FABRICACION DE PROYECTORES DE PELICULAS Y DIAPOSITIVAS, FABRICACION DE RETROPROYECTORES DE TRANSPARENCIAS, FABRICACION DE ENSAMBLADOS DE LASER. SE INCLUYEN TAMBIEN LAS ACTIVIDADES DE REVESTIMIENTO, PULIDO Y MONTADURA DE LENTES"
+                            },
+                            {
+                                "code": "333001",
+                                "name": "FABRICACION DE RELOJES DE TODO TIPO",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE: RELOJES DE TODO TIPO; CAJAS PARA RELOJES,INCLUSO CAJAS DE METALES PRECIOSOS; PIEZAS DE RELOJES, INCLUSO MECANISMOS DE RELOJERIA. APARATOS PARA REGISTRAR LA HORA DEL DIA Y APARATOS PARA MEDIR, REGISTRAR O INDICAR DE OTRO MODO INTERVALOS DE TIEMPO MEDIANTE UN MECANISMO DE RELOJERIA O UN MOTOR SINCRONICO COMO PARQUIMETROS, RELOJES DE CONTROL DE ENTRADA, MARCADORES DE FECHA Y HORA Y CRONOMETROS DE TIEMPO DE FABRICACION; CONMUTADORES HORARIOS CON MECANISMO DE RELOJERIA Y CONMOTOR SINCRONICO. CORREAS, CINTAS Y PULSERAS DE METAL, INCLUSO DE METALES PRECIOSOS, PARA RELOJES DE BOLSILLO Y DE PULSERA. PIEZAS PARA RELOJES DE TODO TIPO,TALES COMO MUELLES, RUBIES, ESFERAS, CHAPAS, PUENTES Y OTRAS PIEZAS. ENTES Y OTRAS PIEZAS."
+                            },
+                            {
+                                "code": "341001",
+                                "name": "FABRICACION DE VEHICULOS AUTOMOTORES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: AUTOMOVILES Y OTROS VEHICULOS AUTOMOTORES DISEÑADOS PRINCIPALMENTE PARA EL TRANSPORTE DE PERSONAS: AUTOMOVILES DE TURISMO, VEHICULOS AUTOMOTORES DE TRANSPORTE DE PASAJEROS DISEÑADOS PARA TRANSITAR POR TERRENOS IRREGULARES (TRINEOS MOTORIZADOS, CARRITOS AUTOPROPULSADOS PARA CAMPOS DE GOLF, VEHICULOS PARA TODO TERRENO, VEHICULOS ANFIBIOS) Y VEHICULOS AUTOMOTORES PARA EL TRANSPORTE PUBLICO DE PASAJEROS, A SABER, AUTOBUSES. VEHICULOS AUTOMOTORES PARA EL TRANSPORTE DE MERCANCIAS: CAMIONES Y CAMIONETAS COMUNES (DE CAJADESCUBIERTA, CON CAPOTA, CERRADOS, ETC.); CAMIONES CON DISPOSITIVOS DE DESCARGA AUTOMATICOS, CAMIONES CISTERNA, VOLQUETES, CAMIONES RECOLECTORES DE BASURA, ETC.; CAMIONES Y CAMIONETAS DE USO ESPECIAL (CAMIONES DE AUXILIO CARRETERO, CAMIONES BLINDADOS, CAMIONES DE BOMBEROS, CAMIONES BARREDORES, UNIDADES MEDICAS Y ODONTOLOGICAS MOVILES, BIBLIOTECAS MOVILES, ETC.) TRACTORES PARA SEMIRREMOLQUES DE CIRCULACION POR CARRETERA. CHASIS EQUIPADOS CON MOTORES PARA LOS VEHICULOS AUTOMOTORES DESCRITOS ANTERIORMENTE. MOTORES DE COMBUSTION INTERNA CON EMBOLOS DE MOVIMIENTO RECTILINEO O ROTATORIO Y DE ENCENDIDO POR CHISPA ELECTRICA O POR COMPRESION, DEL TIPO UTILIZADO PRINCIPALMENTE EN VEHICULOS AUTOMOTORES."
+                            },
+                            {
+                                "code": "342001",
+                                "name": "FABRICACION DE CARROCERIAS PARA VEHICULOS AUTOMOTORES, REMOLQUES Y SEMIREMOLQUES",
+                                "description": "ESTA CLASE ABARCA LA FABRICACION DE: CARROCERIAS DE VEHICULOS AUTOMOVILES DE LAS PARTIDAS 87.01 A 87.05, INCLUIDAS LAS CABINAS QUE SE ENCUENTRAN EN LAS PARTIDAS ARANCELARIAS 870790900031 Y 870790900039. DISENADAS PARA SER MONTADAS SOBRE CHASIS DE VEHICULOS AUTOMOTORES, CARROCERIAS PARA VEHICULOS SIN CHASIS Y CARROCERIAS DE MONOCASCO; CARROCERIAS PARA VEHICULOS DE TURISMO,CAMIONES Y VEHICULOS DE USO ESPECIAL; CARROCERIAS DE METAL, MADERA, PLASTICO Y COMBINACIONES DE ESTOS Y OTROS MATERIALES. REMOLQUES Y SEMIRREMOLQUES DISENADOS PARA SER TIRADOS POR VEHICULOS AUTOMOTORES; REMOLQUES Y SEMIRREMOLQUES DEL TIPO UTILIZADO PARA VIVIENDA Y PARA ACAMPAR."
+                            },
+                            {
+                                "code": "342002",
+                                "name": "FABRICACION DE CARROCERIAS PARA CAMIONES DE LAS PARTIDAS ARANCELARIAS 870790002 Y 870790500029",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE CARROCERIAS PARA CAMIONES DE LAS PARATIDAS ARANCELARIAS : 870790002 Y 870790500029"
+                            },
+                            {
+                                "code": "343001",
+                                "name": "FABRICACION DE PARTES, PIEZAS Y ACCESORIOS PARA VEHICULOS AUTOMOTORES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE PARTES, PIEZAS, COMPONENTES Y ACCESORIOS PARA VEHICULOS AUTOMOTORES, INCLUSO PARA SUS CARROCERIAS Y MOTORES: FRENOS,CAJAS DE ENGRANAJES, EJES, AROS DE RUEDAS, AMORTIGUADORES, RESORTES, RADIADORES, SILENCIADORES, TUBOS DE ESCAPE, EMBRAGUES, VOLANTES, COLUMNAS Y CAJAS DE DIRECCION Y OTRAS PARTES, PIEZAS Y ACCESORIOS NO CLASIFICADOS EN OTRA PARTE."
+                            },
+                            {
+                                "code": "351101",
+                                "name": "SERVICIO DE REPARACION DE EMBARCACIONES Y SUS PARTES Y/O ESTRUCTURAS FLOTANTES",
+                                "description": "COMPRENDE EL MANTENIMIENTO, REACONDICIONAMIENTO Y REPARACION DE TODO TIPO DE EMBARCACIONESY ESTRUCTURAS FLOTANTES, DE ACUERDO AL OFICIO DGT-87-07DE LA DIRECCION GENERAL DE TRIBUTACION, ESTA ACTIVIDAD QUEDA AFECTA A VENTAS INDEPENDIENTEMENTE DEL LUGAR DONDE SE PRESTE EL SERVICIO DE REPARACION."
+                            },
+                            {
+                                "code": "351102",
+                                "name": "CONSTRUCCION DE EMBARCACIONES Y ESTRUCTURAS FLOTANTES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA CONSTRUCCION DE BUQUES, YATES Y OTRAS EMBARCACIONES, ASI COMO DEESTRUCTURAS FLOTANTES COMO PANTALANES FLOTANTES, PONTONES, EMBARCADORES FLOTANTES, DIQUES FLOTANTES, BARCAZAS, GRUAS FLOTANTES Y OTROS UTILIZADAS EN EL COMERCIO Y ACTIVIDADES RELACIONADAS, TRANSPORTE DE PASAJEROS, INCLUSO EMBARCACIONES DE USOS MULTIPLES, PARA LA NAVEGACION MARITIMA, COSTERA Y FLUVIAL, BARCOS DE PESCA Y OTRAS EMBARCACIONES DE RECREO."
+                            },
+                            {
+                                "code": "351103",
+                                "name": "VENTA DE EMBARCACIONES DE MOTOR Y VELA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE EMBARCACIONES DE MOTORO VELA, YA SEAN ESTOS IMPORTADOS . TAMBIEN SE INCLUYEN LA VENTA DE BUQUES, BARCOS, NAVES, NAVIOS, YATES, CRUCEROS Y OTROS. ESTA VENTA ESTA AFECTA AL IMPUESTO DE VENTAS TANTO EN LA IMPORTACION COMO EN LA VENTA A NIVEL LOCAL."
+                            },
+                            {
+                                "code": "352001",
+                                "name": "FABRICACION DE LOCOMOTORAS Y MATERIAL RODANTE PARA FERROCARRILES Y TRANVIAS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE: LOCOMOTORAS DE FERROCARRIL: LOCOMOTORAS PROPULSADAS POR UNA FUENTE DE ENERGIA EXTERIOR Y POR ACUMULADORES ELECTRICOS; LOCOMOTORAS DIESEL ELECTRICAS; LOCOMOTORAS PROPULSADAS POR MOTORES DE ENCENDIDO PORCOMPRESION Y POR OTROS MEDIOS (POR EJEMPLO, TURBINAS DE GAS, MAQUINAS DE VAPORY MOTORES DE ENCENDIDO POR CHISPA ELECTRICA) TENDERES DE LOCOMOTORA. VAGONES DEPASAJEROS, FURGONES Y VAGONES DE PLATAFORMA AUTOPROPULSADOS DE TRANVIA Y DE FERROCARRIL, CUALQUIERA SEA LA FUERZA MOTRIZ, INCLUSO VEHICULOS AUTOPROPULSADOS DEMANTENIMIENTO Y DE SERVICIO PARA TRANVIAS Y FERROCARRILES (POR EJEMPLO, VAGONESTALLER, GRUAS Y VAGONES DE ENSAYOS). MATERIAL RODANTE NO AUTOPROPULSADO PARATRANVIAS Y FERROCARRILES: VAGONES DE PASAJEROS, FURGONES DE CARGA, VAGONES CISTERNA, FURGONES Y VAGONES DE VOLTEO, Y FURGONES TALLER, VAGONES GRUA, ETC. PARTESY PIEZAS ESPECIALES DE LOCOMOTORAS Y TRANVIAS Y DE SU MATERIAL RODANTE: BOGIES,EJES Y RUEDAS; FRENOS Y PIEZAS DE FRENOS; GANCHOS Y MECANISMOS DE ENGANCHE, TOPES Y PIEZAS DE TOPES; AMORTIGUADORES (EXCEPTO MUELLES); BASTIDORES DE VAGONES YLOCOMOTORAS; CARROCERIAS; PLATAFORMAS DE INTERCOMUNICACION, ETC. EQUIPO MECANICO (INCLUSO ELECTROMECANICO) DE SEÑALIZACION, SEGURIDAD Y REGULACION DEL TRAFICOPARA FERROCARRILES TRANVIAS, CARRETERAS, VIAS DE NAVEGACION INTERIORES, TRANVIAS, CARRETERAS, VIAS DE NAVEGACION INTERIORES, ESTACIONAMIENTO INSTALACIONES PORTUARIAS Y AEROPUERTOS. SE TRATA DE APARATOSCUYAS SEÑALES, ETC., SE PONEN EN FUNCIONAMIENTO DESDE UN CENTRO DE MANDO, QUE GENERALMENTE SE ENCUENTRA A CIERTA DISTANCIA, MEDIANTE MANIVELAS, PALANCAS, VARILLAS, ALAMBRES, CADENAS, ETC.; MEDIANTE DISPOSITIVOS HIDRONEUMATICOS; Y MEDIANTE MOTORES ELECTRICOS (POR EJEMPLO, EQUIPO DE CAJAS DE SEÑALES, APARATOS DE MANEJO DE LAS AGUJAS, FRENOS DE CARRIL, APARATOS AUTOMATICOS DE SEÑALES PARA NIEBLA Y MECANISMOS DE CONTROL DE PASOS A NIVEL)."
+                            },
+                            {
+                                "code": "353001",
+                                "name": "FABRICACION DE AERONAVES Y NAVES ESPACIALES Y MAQUINARIA CONEXA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: AEROPLANOS, MOTORIZADOS O NO, APARATOS DE VOLAR MAS LIVIANOS QUE EL AIRE, GLOBOS, NAVES ESPACIALES Y VEHICULOS PARA EL LANZAMIENTO DE NAVES ESPACIALES. AEROPLANOS MOTORIZADOS DE ALA FIJA Y DEMANEJO POR TRIPULACIONES PARA EL TRANSPORTE DE MERCANCIAS Y PASAJEROS, PARA DEFENSA MILITAR, DEPORTE Y OTROS FINES. AERONAVES DE ALA GIRATORIA PARA TODO USO.PLANEADORES, ALAS DELTA Y OTRAS AERONAVES SIN MOTOR. DIRIGIBLES; GLOBOS UTILIZADOS EN AERONAUTICA Y METEOROLOGIA. NAVES ESPACIALES, EQUIPADAS O NO PARA USO HUMANO; VEHICULOS DE LANZAMIENTO DE NAVES ESPACIALES, EXCEPTO LOS VEHICULOS DE LANZAMIENTO MILITARES. ARTEFACTOS DE LANZAMIENTO DE AERONAVES; DISPOSITIVOS DE FRENADO SOBRE CUBIERTA Y DISPOSITIVOS SIMILARES, APARATOS DE ENTRENAMIENTO DE VUELOEN TIERRA. PARTES, PIEZAS Y ACCESORIOS DE LAS AERONAVES DE ESTA CLASE; ENSAMBLADURAS PRINCIPALES, COMO FUSELAJES, ALAS, PUERTAS, PANELES DE MANDO, TRENES DE ATERRIZAJE, INCLUSO FLOTADORES DE HIDROAVION, DEPOSITOS DE COMBUSTIBLE, GONDOLAS,ETC. PARTES ESPECIALES DE ENSAMBLADURAS PRINCIPALES ESPECIALMENTE DISEÑADAS PARA SU INSTALACION EN AERONAVES; PARTES DE GLOBOS Y DIRIGIBLES Y DE NAVES ESPACIALES Y VEHICULOS DE LANZAMIENTO. HELICES, ROTORES DE HELICOPTERO Y PALAS DE HELICE PROPULSADAS. MOTORES DEL TIPO UTILIZADO GENERALMENTE EN AERONAVES. MOTORES DE COMBUSTION INTERNA CON EMBOLOS DE MOVIMIENTO RECTILINEO O ROTATORIO Y DE ENCENDIDO POR CHISPA ELECTRICA PARA AERONAVES. TURBORREACTORES Y TURBOHELICES PARA AERONAVES. MOTORES DE REACCION: ESTATORREACTORES, PULSORREACTORES Y MOTORES DE COHETES. PARTES Y PIEZAS DE TURBORREACTORES Y DE TURBOHELICES. SE INCLUYEN EL MANTENIMIENTO Y LA REPARACION Y MODIFICACION DE AERONAVES Y MOTORES DE AERONAVES."
+                            },
+                            {
+                                "code": "359101",
+                                "name": "FABRICACION DE MOTOCICLETAS, PARTES, PIEZAS Y SUS ACCESORIOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE: MOTOCICLETAS (INCLUSO VELOMOTORES)Y VELOCIPEDOS CON MOTOR AUXILIAR, CON O SIN SIDECAR; MOTOCICLETAS DE REPARTO YDE DEPORTE. MOTORES PARA MOTOCICLETAS. SIDECARES; PARTES, PIEZAS Y ACCESORIOSDE MOTOCICLETAS."
+                            },
+                            {
+                                "code": "359201",
+                                "name": "FABRICACION DE BICICLETAS Y SILLAS DE RUEDAS, PARTES, PIEZAS Y SUS ACCESORIOS",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE: BICICLETAS NO MOTORIZADAS, A SABER, VELOCIPEDOS EQUIPADOS CON UNA O MAS RUEDAS; TRICICLOS DE REPARTO, BICICLETAS CON SIDECAR, TANDEMS, BICICLETAS DE CARRERA Y BICICLETAS PARA NIÑOS, EXCEPTO OTROS TIPOSDE VEHICULOS DE RUEDAS PARA NIÑOS. SILLONES DE RUEDAS PARA INVALIDOS, ESTEN ONO MOTORIZADOS Y SEAN O NO PROPULSADOS POR ALGUN MEDIO MECANICO. PARTES Y PIEZAS DE BICICLETAS (INCLUSO SILLINES) Y DE SILLONES DE RUEDAS PARA INVALIDOS."
+                            },
+                            {
+                                "code": "359901",
+                                "name": "FABRICACION DE OTROS TIPOS DE EQUIPO DE TRANSPORTE N.C.P.",
+                                "description": "ESTA CLASE ABARCA LA FABRICACION DE VEHICULOS NO CLASIFICADOS EN OTRA PARTE. VEHICULOS DE PROPULSION MANUAL: CARRETILLAS, CARRITOS PARA EQUIPAJE, TRINEOS, CARRITOS PARA SUPERMERCADOS, CARRETONCILLOS, CARROS Y PORTACARGAS DE VARIOS TIPOS, INCLUSO LOS DISEÑADOS ESPECIALMENTE PARA DETERMINADAS INDUSTRIAS. VEHICULOS DE TRACCION ANIMAL: CALESAS, CALESINES, CARROS PARA ROCIAR Y ESPOLVOREAR, CARROZAS FUNEBRES, ETC."
+                            },
+                            {
+                                "code": "361001",
+                                "name": "FABRICACION Y/O REPARACION DE MUEBLES Y ACCESORIOS (INCLUYECOLCHONES)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE MUEBLES Y ACCESORIOS DE TODO TIPO (MADERA, MIMBRE, BAMBU, METALES COMUNES, VIDRIO, CUERO, PLASTICO, ETC) PARA CUALQUIER LUGAR (VIVIENDAS, HOTELES, TEATROS, OFICINAS, IGLESIAS, RESTAURANTES, HOSPITALES, BARCOS, AVIONES, AUTOMOVILES, ETC); ADEMAS SE INCLUYEN ARTEFACTOS COMO SOMIERES Y COLCHONES. TAMBIEN SE INCLUYE LA REPARACION O TAPICERIA DE LOS MISMOS. LA FABRICACION DE MUEBLES DE CERAMICA, HORMIGON Y PIEDRA SE DEBEN INCLUIR EN LAS CLASES 2691, 2695 Y 2696 RESPECTIVAMENTE. LA FABRICACION DE LAMPARAS Y ACCESORIOS PARA ILUMINACION SE INCLUYE EN LA CLASE 3150. LA FABRICACION DE MUEBLES PARA MEDICINA, CIRUGIA, ODONTOLOGIA Y VETERINARIA SE INCLUYE EN LA CLASE 3311."
+                            },
+                            {
+                                "code": "361002",
+                                "name": "REPARACION DE TAPICERIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA REPARACION DE MUEBLES Y SUS TAPICES."
+                            },
+                            {
+                                "code": "361004",
+                                "name": "MAQUILA DE MUEBLES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE MANUFACTURA DE TODO TIPO DE MUEBLES REALIZADO FUERA DE LA UNIDAD DE PRODUCCION."
+                            },
+                            {
+                                "code": "369101",
+                                "name": "FABRICACION DE JOYAS, BISUTERIA Y ARTICULOS CONEXOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRODUCCION DE PERLAS LABRADAS, ES DECIR, PERLAS QUEHAN SIDO PULIDAS PARA ELIMINAR DEFECTOS, TALADRADAS Y CORTADAS. PRODUCCION DE PIEDRAS PRECIOSAS Y SEMIPRECIOSAS LABRADAS (INCLUSO DIAMANTES), ES DECIR, PIEDRASNO SOLO CORTADAS, LIMPIAS Y DESBASTADAS, SINO TAMBIEN TRABAJADAS. SE INCLUYE LAPRODUCCION DE PIEDRAS DE CALIDAD INDUSTRIAL Y DE PIEDRAS PRECIOSAS Y SEMIPRECIOSAS SINTETICAS Y RECONSTRUIDAS. FABRICACION DE: JOYAS DE METALES PRECIOSOS, DE PIEDRAS PRECIOSAS Y SEMIPRECIOSAS, Y DE COMBINACIONES DE METALES PRECIOSOS PIEDRAS PRECIOSAS Y SEMIPRECIOSAS. ARTICULOS DE ORFEBRERIA ELABORADOSCON METALES PRECIOSOS: CUBIERTOS, VAJILLA, RECIPIENTES DE MESA, ARTICULOS DE TOCADOR, ARTICULOS ESTACIONARIOS DE USO RELIGIOSO, ETC. PARTES Y PIEZAS DE JOYAS Y DE ARTICULOS DE ORFEBRERIA. ARTICULOS DE USO TICNICO Y DE LABORATORIO ELABORADOS CON METALES PRECIOSOS (EXCEPTO INSTRUMENTOS Y PIEZAS DE INSTRUMENTOS): CRISOLES, COPELAS,ESPATULAS, REJILLAS DE ALAMBRE DE PLATINO PARA SU USO COMO CATALIZADORES, ANODOS DE GALVANOPLASTIA. MONEDAS (INCLUSO MONEDAS DE CURSO LEGAL), OTRAS MONEDAS, MEDALLAS Y MEDALLONES, SEAN O NO DE METALES PRECIOSOS. FABRICACION DE BISUTERIA COMO ANILLOS, COLLARES, BRAZALETES Y ARTICULOS DE BISUTERIA SIMILARES DE METALES COMUNES CHAPADOS CON METALES PRECIOSOS,"
+                            },
+                            {
+                                "code": "369201",
+                                "name": "FABRICACION DE INSTRUMENTOS MUSICALES, PARTES Y PIEZAS Y SUS ACCESORIOS",
+                                "description": "EN ESTA CLASE DE INCLUYE LA FABRICACION DE TODO TIPO DE INSTRUMENTOS MUSICALES, ASI COMO SUS PARTES, PIEZAS Y ACCESORIOS COMO METRONOMOS, DIAPASONES DE PERSUCION Y BOCA, TARJETAS, DISCOS Y ROLLOS PARA INSTRUMENTOS MECANICOS AUTOMATICOS, ETC"
+                            },
+                            {
+                                "code": "369301",
+                                "name": "FABRICACION DE ARTICULOS DE DEPORTE",
+                                "description": "ESTA CLASE INCLUYE LA FABRICACION DE ARTICULOS DE DEPORTE Y ATLETISMO ( EXCEPTO PRENDAS DE VESTIR Y CALZADO) FABRICACION DE ARTICULOS Y EQUIPO DE CUALQUIER MATERIAL PARA LA PRACTICA DE DEPORTES Y JUEGOS AL AIRE LIBRE Y BAJO TECHO COMO BALONES DUROS, BLANDOS E INFLABLES, RAQUETAS, BATES Y MAZOS, TABLAS DE VELA Y DE SURF, BOTAS DE ESQUI, ARTICULOS PARA LA PESCA DEPORTIVA, ARTICULOS PARA LA CAZA, PATINES DE RUEDAS, PATIENES DE HIELO, ARCOS Y BALLESTAS, EQUIPO PARA GIMNASIO. EQUIPO PARA ATLETISMO, ENTRE OTROS"
+                            },
+                            {
+                                "code": "369401",
+                                "name": "FABRICACION DE JUEGOS Y JUGUETES",
+                                "description": "ESTA CLASE COMPRENDE LA FABRICACION DE MUÑECAS, JUGUETES Y JUEGOS (INCLUIDOS LOS JUEGOS ELECTRONICOS, EXCEPTO LAS CONSOLAS DE VIDEOJUEGOS), MODELOS A ESCALA Y VEHICULOS PARA NIÑOS (EXCEPTO BICICLETAS Y TRICICLOS DE METAL). ARTICULOS PARA FERIAS DE ATRACCIONES, JUEGOS DE MESA Y SALON. ROMPECABEZAS Y SIMILARES, ENTRE OTROS."
+                            },
+                            {
+                                "code": "369901",
+                                "name": "FABRICACION DE ESCOBAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE ESCOBAS Y CEPILLOS (INCLUSO ESCOBILLAS PARA MAQUINAS); BARREDORES MECANICOS DE MANEJO MANUAL; ALJOFIFAS Y PLUMEROS; ALMOHADILLAS Y RODILLOS PARA PINTURA; ESCURRIDORES Y OTROS CEPILLOS, ESCOBAS, Y ALJOFIFAS, ETC."
+                            },
+                            {
+                                "code": "369902",
+                                "name": "FABRICACION DE VELAS (CANDELAS) EXCEPTO LAS PERFUMADAS, COLOREADAS Y DECORADAS.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE VELAS O CANDELAS CORRIENTES. LA FABRICACION DE VELAS DECORADAS, PERFUMADAS Y COLOREADAS SE INCLUYE EN LA CLASE 369903"
+                            },
+                            {
+                                "code": "369903",
+                                "name": "FABRICACION DE VELAS COLOREADAS, PERFUMADAS Y DECORADAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA FABRICACION DE VELAS O CANDELAS DECORADAS, PERFUMA- DAS Y COLOREADAS DE CUALQUIER TAMAÑO Y FORMA. LAS VELAS BLANCAS CORRIENTES SE INCLUYE EN LA CLASE 369902."
+                            },
+                            {
+                                "code": "369904",
+                                "name": "FABRICACION DE SELLOS DE MANO, METAL O HULE (CAUCHO)",
+                                "description": "ESTA CLASE INCLUYE A LOS FABRICANTES DE ESTE TIPO DE UTENSILIOS QUE SIRVAN PARA ESTAMPAR CIFRAS U OTRAS IMAGENES GRABADAS EN ESTE."
+                            },
+                            {
+                                "code": "371001",
+                                "name": "RECICLAJE DE DESPERDICIOS Y DESECHOS METALICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA RECOLECCION DE DESECHOS METALICOS Y ARTICULOS RELACIONADOS, CON EL FIN DE VENDERLOS A UN TERCERO PARA SER PROCESADOS INDUSTRIAL O ARTESANALMENTE."
+                            },
+                            {
+                                "code": "372001",
+                                "name": "RECICLAJE DE OTRO TIPO DE MATERIALES N.C.P.",
+                                "description": "EN ESTA CLASE SE INCLUYE EL RECICLAJE DE MATERIALES DIFERENTES AL METAL TALES COMO EL CAUCHO, TEXTILES, CARTUCHOS DE TINTA, ENTRE OTROS. EL ABONO ORGANICO SE INCLUYE EN EL CODIGO 241201"
+                            },
+                            {
+                                "code": "372003",
+                                "name": "RECICLAJE DE PAPEL Y PLASTICO Y MATERIALES RELACIONADOS",
+                                "description": "EN ESTA SE INCLUYE LA RECOLECCION DE MATERIALES DE DESECHO O DESPERDICIOS A BASE DE PAPEL O PLASTICO Y MATERIALES RELACIONADOS"
+                            },
+                            {
+                                "code": "401002",
+                                "name": "GENERACION Y/O DISTRIBUCION DE ENERGIA ELECTRICA (HIDRAULICA,CONVENCIONAL, TERMICO, ETC)",
+                                "description": "ESTA CLASE INCLUYE LA GENERACION, CAPTACION, TRASMISION Y DISTRIBUCION DE ENERGIA ELECTRICA PARA LA VENTA A USURIOS RESIDENCIALES, INDUSTRIALES Y COMERCIALES.L A ELECTRICIDAD PRODUCIDA PUEDE SER DE ORIGEN HIDRAULICO, CONVENCIONAL, TECNICO, NUCLEAR, SOLAR, MAREOMOTRIZ, EOLICA. INCLUYE LAS CENTRALES DE ENERGIA ELECTRIC A QUE VENDEN A TERCEROS UNA PARTE IMPORTANTE DE LA ELECTRICIDAD QUE GENERAN, A LA VEZ QUE PRODUCEN ELECTRICIDAD PARA SU EMRPESA MATRIZ Y SOBRE LAS CUALES PUEDE INFORMARLE EN FORMA SEPARADA DE LAS DEMAS UNIDADES DE LA EMPRESA MATRIZ."
+                            },
+                            {
+                                "code": "401004",
+                                "name": "FABRICACION, ENSAMBLE Y VENTA DE SISTEMAS PARA EL APROVECHAMIENTO DE ENERGIAS RENOBABLES",
+                                "description": "ESTA ACTIVIDAD COMPRENDE LOS CALENTADORES SOLARES, PANELES DE GENERACION ELECTRICA GENERADORES HIDROELECTRICOS Y EOLICOS DE CORRIENTE, BATERIAS DE PLOMO ACIDO Y DE NIQUEL-CADMIO, EQUIPOS ELECTRODOMESTICOS DE CORRIENTE DIRECTA PARA UTILIZARSE CON PANELES FOTOVOLTAICOS, MATERIALES PARA CONSTRUIR EQUIPOS DE APROVECHAMIENTO DE LAS ENERGIAS RENOVABLES, VIDRIO ATEMPERADO, AISLANTES TERMICOS, PLACAS ABSORBENTES, TUBOS ALETEADOS, PERFILES DE ALUMINIO AISLANTES TERMICOS PARA TUBERIAS DE AGUA, INSTRUMENTOS DE MEDICION DE VARIABLES RELACIONADAS CON LAS ENERGIAS RENOVABLES. EXENTO DE LOS IMPUESTOS SELECTIVO DE CONSUMO, Y DE VENTAS (DECLARANTE). (ART 38 LEY 7447)"
+                            },
+                            {
+                                "code": "402001",
+                                "name": "FABRICACION DE GAS; DISTRIBUCION DE COMBUSTIBLES GASEOSOS POR TUBERIAS",
+                                "description": "ESTA CLASE ABARCA LA FABRICACION DE COMBUSTIBLES GASEOSOS Y LA PRODUCCION DE GASMEDIANTE LA DESTILACION DEL CARBON Y MEDIANTE LA MEZCLA DEL GAS FABRICADO CON GAS NATURAL, GASES DE PETROLEO Y OTROS GASES. TAMBIEN INCLUYE LA DISTRIBUCION DECOMBUSTIBLES GASEOSOS POR SISTEMAS DE TUBERIAS PARA SU VENTA A USUARIOS RESIDENCIALES, INDUSTRIALES, COMERCIALES Y DE OTRO TIPO. TRANSPORTE, DISTRIBUCION Y SUMINISRO DE COMBISTIBLES GASEOSOS DE CUALQUIER TIPO POR MEDIO DE UN SISTEMA DE TUBERIAS. VENTAS DE GAS A LOS USUARIOS POR MEDIO DE TUBERIAS,"
+                            },
+                            {
+                                "code": "402002",
+                                "name": "INSTALACION Y VENTA DE TANQUES PARA GAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA INSTALACION Y VENTA DE TANQUES CONTENEDORES DE GAS PARA USO RESIDENCIAL, COMERCIAL, INDUSTRIAL Y CUALQUIER OTRO TIPO."
+                            },
+                            {
+                                "code": "403001",
+                                "name": "SUMINISTRO DE VAPOR Y AIRE ACONDICIONADO",
+                                "description": "ESTA CALSE INCLUYE LA PRODUCCION, RECOGIDA Y DISTRIBUCION DE VAPOR Y AGUA CALIENTE PARA CALEFACCION,PARA LA PRODUCCION DE ENERGIA Y PARA OTROS FINES. PRODUCCION Y DISTRIBUCION DE AGUA FRIA CON FINES DE REFRIGERACION, PRODUCCION Y DISTRIBUCION DE AIRE REFRIGERADO, PRODUCCION DE HIELO, INCLUIDO PARA LA ELABORACION DE PRODUCTOS ALIMENTICIOS Y PARA OTROS FINES."
+                            },
+                            {
+                                "code": "410001",
+                                "name": "CAPTACION, TRATAMIENTO Y DISTRIBUCION DE AGUA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA CAPTACION, TRATAMIENTO Y DISTRIBUCION DE AGUA A USUARIOS RESIDENCIALES, INDUSTRIALES, COMERCIALES Y DE TODO TIPO. SE INCLUYEN LA CAPTACION DE AGUA DE DIVERSAS FUENTES Y SU DISTRIBUCION POR DIVERSOS MEDIOS."
+                            },
+                            {
+                                "code": "451001",
+                                "name": "DEMOLICION DE EDIFICIOS Y OTRAS ESTRUCTURAS",
+                                "description": "EN ESTA CLASE SE INCLUTE LA DEMOLICION O DERRIBO DE EDIFICIOS Y OTRAS ESTRUCTURAS."
+                            },
+                            {
+                                "code": "451002",
+                                "name": "PREPARACION DE TERRENOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA LIMPIEZA DEL TERRENO DE CONSTRUCCION, PERFORACION, TERREAPLENAMIENTO, NIVELACION, MOVIMIENTO DE TIERRA, DRENAJE Y DEMAS ACTIVIDADESDE PREPARACION DE TERRENOS PARA CONSTRUCCION. ADEMAS, SE INCLUYE LA PREPARACION DE TERRENOS PARA ACTIVIDADES AGRICOLAS (ENCAMAR, RASTREAR, ZURQUEAR, ETC).ADEMAS INCLUYE LAS ACTIVIDADES DE REMOCION Y PROPIEDADES MINERAS, EXCAVAR Y REMOVER SUSTRATOS O SEDIMENTOS EN AGUA O TIERRA (DRAGADO)."
+                            },
+                            {
+                                "code": "452002",
+                                "name": "CONSTRUCCION DE EDIFICIOS, APARTAMENTOS, CONDOMINIOS Y CASAS DE HABITACION",
+                                "description": "SE REFIERE A LA CONSTRUCCION DE EDIFICIOS, APARTAMENTOS, CONDOMINIOS, CASAS DE HABITACION, LA ERECCION IN SITU DE ESTRUCTURAS, EDIFICIOS Y CASAS PREFABRICADAS Y OBRAS DE INDOLE TEMPORAL."
+                            },
+                            {
+                                "code": "452003",
+                                "name": "MANTENIMIENTO, REPARACION Y AMPLIACIONES DE EDIFICIOS, APARTAMENTOS, CONDOMINIOS Y CASAS",
+                                "description": "SE REFIERE A LOS SERVICIOS DE REPARACION, MEJORAS, REMODELACIONES DE EDIFICIOS, APTOS, CONDOMINIOS,CASAS LOCALES COMERC. ETC. EFECTUADAS POR ALBAÑILES, FONTANEROS, CARPINTEROS, PINTORES, EMPRESAS Y OTROS RELACIONADAS CON LA RAMA DE LA CONSTRUCCION. LOS SERVICIOS DE ELECTRICISTAS SE ENCUENTRAN EN LA CLASE 526005."
+                            },
+                            {
+                                "code": "452005",
+                                "name": "CONSTRUCCION Y MANTENIMIENTO DE CARRETERAS Y OTRAS VIAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA CONSTRUCCION DE OBRAS DE INGENIERIA CIVIL TALES COMO CARRETERAS, CALLES, PUENTES, PISTAS DE AEROPUERTO Y SU MANTENIMIENTO. INCLUYE ADEMAS ASFALTADO Y LASTREADO DE CAMINOS, PINTURA Y OTROS MARCADOS DE CARRETERA, INSTALACION DE BARRERAS DE EMERGENCIA"
+                            },
+                            {
+                                "code": "452006",
+                                "name": "ACTIVIDADES DE CONSTRUCCION ESPECIALES",
+                                "description": "ESTA CLASE COMPRENDE LAS ACTIVIDADES DE CONSTRUCCION ESPECIALES COMPRENDEN LA PREPARACION Y CONSTRUCCION DE CIERTAS PARTES DE LAS OBRAS ANTES MENCIONADAS Y POR LO GENERAL SE CONCENTRAN EN UN ASPECTO COMUN A DIFERENTES ESTRUCTURAS Y REQUIEREN LA UTILIZACION DE TECNICAS Y EQUIPOS ESPECIALES. SE TRATA DE ACTIVIDADES TALES COMO LA HINCADURA DE PILOTES, LA CIMENTACION, LA PERFORACION DE POZOS DE AGUA, LA ERECCION DE ESTRUCTURAS DE EDIFICIOS, EL HORMIGONADO, LA COLOCACION DE MAMPUESTOS DE LADRILLO Y DE PIEDRA, LA INSTALACION DE ANDAMIOS, LA CONSTRUCCION DE TECHOS, ETC. TAMBIEN SE INCLUYE LA ERECCION DE ESTRUCTURAS DE ACERO, SIEMPRE QUE LOS COMPONENTES DE LA ESTRUCTURA NO SEAN FABRICADOS POR LA UNIDAD CONSTRUCTORA. LAS ACTIVIDADES DE CONSTRUCCION ESPECIALES SE REALIZAN PRINCIPALMENTE MEDIANTE SUBCONTRATOS, EN PARTICULAR EN EL CASO DE LOS TRABAJOS DE REPARACION QUE SE REALIZAN DIRECTAMENTE PARA EL DUEÑO DE LA PROPIEDAD."
+                            },
+                            {
+                                "code": "453001",
+                                "name": "REPARACION DE AIRE ACONDICIONADO",
+                                "description": "ESTA CLASE INCLUYE LA REPARACION DE AIRE ACONDICIONADO DE ACUERDO AL OFICIO DGT-87-07 DE LA DIRECCION GENERAL DE TRIBUTACION, ESTA ACTIVIDAD QUEDA AFECTA A VENTAS INDEPENDIENTEMENTE DEL LUGAR DONDE SE PRESTE EL SERVICIO."
+                            },
+                            {
+                                "code": "453002",
+                                "name": "REPARACION DE ASCENSORES(ELEVADORES)",
+                                "description": "ESTA CLASE INCLUYE LA REPARACION DE ASCENSORES (ELEVADORES). DE ACUERDO AL OFICIO DGT-87-07 DE LA DIRECCION GENERAL DE TRIBUTACION, ESTA ACTIVIDAD QUEDA AFECTA A VENTAS INDEPENDIENTEMENTE DEL LUGAR DONDE SE PRESTE EL SERVICIO."
+                            },
+                            {
+                                "code": "453003",
+                                "name": "VENTA E INSTALACION DE ALARMAS Y OTROS SISTEMAS ELECTRICOS",
+                                "description": "SE REFIERE A LA INSTALACION Y VENTA DE TODO TIPO DE ALARMAS DE SEGURIDAD Y DE OTROS SISTEMAS ELECTRICOS DE SEGURIDAD."
+                            },
+                            {
+                                "code": "453004",
+                                "name": "REPARACION DE CABLEADO DE COMUNICACIONES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA REPARACION DE SISTEMAS DE CABLES PARA REDES DE COMUNICACION COMO COMPUTADORAS (INTERNET), TELEVISION, VIDEO CABLE, ANTENAS, ETC, PARA EDIFICIOS , CASAS DE HABITACION U OTROS TIPO DE LOCALES. DE ACUERDO AL OFICIO DGT-87-07 DE LA DIRECCION GENERAL DE TRIBUTACION, ESTA ACTIVIDAD QUEDA AFECTA A VENTAS INDEPENDIENTEMENTE DEL LUGAR DONDE SE PRESTE EL SERVICIO."
+                            },
+                            {
+                                "code": "453005",
+                                "name": "INSTALACION DE ALARMAS Y OTROS SISTEMAS DE SEGURIDAD",
+                                "description": "ESTA CLASE INCLUYE UNICAMENTE EL SERVICIO DE INSTALACION DE ALARMAS Y OTROS SISTEMAS DE SEGURIDAD, TALES COMO ALAMBRE NAVAJA, CIRCUITO CERRADO."
+                            },
+                            {
+                                "code": "453006",
+                                "name": "INSTALACION Y MANTENIMIENTO DE AIRE ACONDICIONADO",
+                                "description": "ESTA CLASE INCLUYE LA INSTALACION Y MANTENIMIENTO DE EQUIPOS DE AIRE ACONDICIONADO"
+                            },
+                            {
+                                "code": "453007",
+                                "name": "INSTALACION Y MANTENIMIENTO DE ASCENSORES (ELEVADORES)",
+                                "description": "ESTA CLASE INCLUYE LA INSTALACION Y MANTENIMIENTO DE ASCENSORES (ELEVADORES)"
+                            },
+                            {
+                                "code": "453008",
+                                "name": "INSTALACION Y MANTENIMIENTO DE CABLEADO DE COMUNICACIONES Y/O ENERGIA ELECTRICA",
+                                "description": "ESTA CLASE INCLUYE LA INSTALACION Y MANTENIMIENTO DE CABLEADO DE COMUNICACIONES Y ENERGIA ELECTRICA."
+                            },
+                            {
+                                "code": "453009",
+                                "name": "REPARACION DE PORTONES ELECTRICOS",
+                                "description": "ESTA CLASE INCLUYE EL SERVICIO DE REPARACION Y MANTENIMIENTO DE PORTONES ELECTRICOS Y SUS COMPONENTES."
+                            },
+                            {
+                                "code": "453010",
+                                "name": "INSTALACION Y MANTENIMIENTO DE PORTONES ELECTRICOS",
+                                "description": "ESTA CLASE INCLUYE EL SERVICIO DE INSTALACION Y MANTENIMIENTO DE PORTONES ELECTRICOS."
+                            },
+                            {
+                                "code": "453011",
+                                "name": "INSTALACION Y MANTENIMIENTO DE CONMUTADORES Y OTROS SISTEMAS PARA TELECOMUNICACIONES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE INSTALACION Y MANTENIMIENTO DE CONMUTADORES O CENTRALES TELEFONICAS, ASI COMO OTROS SISTEMAS PARA TELECOMUNICACIONES TALES COMO SERVIDORES PARA TELEFONIA INALAMBRICA O INTERNET."
+                            },
+                            {
+                                "code": "454001",
+                                "name": "SERVICIOS DE TERMINACION Y ACABADO DE EDIFICIOS",
+                                "description": "ESTA CLASE COMPRENDE LAS ACTIVIDADES DE APLICACION DE YESO Y ESTUCO PARA INTERIORES Y EXTERIORES, CON LOS MATERIALES DE ENLISTONAR CORRESPONDIENTES, INSTALACION DE PUERTAS (EXCEPTO PUERTAS AUTOMATICAS Y GIRATORIAS), VENTANAS Y MARCOS DE PUERTAS Y VENTANAS DE MADERA O DE OTROS MATERIALES, INSTALACION DE MUEBLES DE COCINA A MEDIDA, ESCALERAS, MOBILIARIO PARA TIENDAS Y SIMILARES, INSTALACION DE MOBILIARIO, ACABADO DE INTERIORES, COMO TECHOS, REVESTIMIENTOS DE MADERA PARA PAREDES, TABIQUES MOVIBLES, COLOCACION BALDOSAS, LOSAS Y LOSETAS DE CERAMICA, HORMIGON O PIEDRA TALLADA PARA PAREDES Y PISOS, ACCESORIOS DE CERAMICA PARA COCINAS PARQUE Y OTROS REVESTIMIENTOS DE MADERA PARA PISOS ALFOMBRAS Y CUBRIMIENTOS DE LINOLEO PARA PISOS, INCLUIDOS LOS DE CAUCHO O PLASTICO, REVESTIMIENTO PARA SUELOS O PAREDES DE TERRAZO, MARMOL, GRANITO O PIZARRA PAPEL DE EMPAPELAR, PINTURA INTERIOR Y EXTERIOR DE EDIFICIOS, PINTURA DE OBRAS DE INGENIERIA CIVIL, INSTALACION DE VIDRIOS, ESPEJOS."
+                            },
+                            {
+                                "code": "455001",
+                                "name": "ALQUILER DE EQUIPO DE CONSTRUCCION O DEMOLICION CON OPERADORES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE MAQUINARIA Y EQUIPO DE CONSTRUCCION YDEMOLICION, TALES COMO: CAMIONES, GRUAS, MEZCLADORAS DE MATERIALES DE CONSTRUC-CION, PULIDORAS DE PISOS, ASI COMO CUALQUIER OTRA MAQUINARIA Y EQUIPO RELACIONADA CON LA RAMA DE LA CONSTRUCCION INCLUYENDO LOS OPERARIOS."
+                            },
+                            {
+                                "code": "501001",
+                                "name": "VENTA AL POR MAYOR Y MENOR DE VEHICULOS NUEVOS Y/O USADOS (PARTIDAS ARANCELARIAS 8702 Y 8704)",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR Y AL POR MENOR DE VEHICULOS AUTOMOTORES DE PASAJEROS, VEHICULOS ESPECIALES (AMBULANCIAS, CASAS RODANTES, MICROBUSES, ETC.), VEHICULOS PARA TODO TERRENO (JEEPS, LAND ROVERS, ETC.) Y OTROS VEHICULOS AUTOMOTORES DE PASAJEROS CON MECANISMOS DE CONDUCCION SIMILARES A LOS DE LOS AUTOMOVILES, ASI COMO LA VENTA DE CAMIONES, REMOLQUES Y SEMIRREMOLQUES, PARA LAS CUALES SEGUN EL DECRETO N 32458-H PUBLICADO EN LA GACETA N 131 DEL 07 DE JULIO DEL 2005, EL IMPUESTO SOBRE LAS VENTAS EN LA IMPORTACION Y COMERCIALIZACON SE FIJA A NIVEL DE ADUANAS."
+                            },
+                            {
+                                "code": "501002",
+                                "name": "VENTA AL POR MAYOR Y MENOR DE VEHICULOS NUEVOS Y/O USADOS, EXCEPTO PARTIDAS ARANCELARIAS 8702 Y 8704",
+                                "description": "VENTA AL POR MAYOR Y MENOR DE VEHICULOS NUEVOS Y/O USADOS, EXCEPTO PARTIDAS ARANCELARIAS 8702 Y 8704"
+                            },
+                            {
+                                "code": "502001",
+                                "name": "LAVADO, ENCERADO Y PULIDO DE AUTOMOVILES (LAVA CAR)",
+                                "description": "ESTA CLASE INCLUYE EL SERVICIO QUE SE PRESTA EN EL LAVADO,ENCERADO (LUSTRADO), PULIDO Y DEMAS SERVICIOS DE LIMPIEZA"
+                            },
+                            {
+                                "code": "502002",
+                                "name": "SERVICIOS DE ALINEAMIENTO Y REPARACION DE LLANTAS",
+                                "description": "ESTA CLASE INCLUYE UNICAMENTE EL SERVICIO DE ALINEAMIENTO, TRAMADO Y REPARACION DE LLANTAS"
+                            },
+                            {
+                                "code": "502003",
+                                "name": "SERVICIO DE REPARACION DE TODA CLASE DE VEHICULOS Y SUS PARTES",
+                                "description": "ESTA CLASE ABARCA EL MANTENIMIENTO Y REPARACION DE VEHICULOS AUTOMOTORES INDEPENDIENTEMENTE DEL LUGAR DONDE SE PRESTE EL SERVICIO YA SEA EN UN TALLER O A DOMICILIO. ASIMISMO, COMPRENDE LA REPARACION DE TODAS LAS PARTES Y PIEZAS QUE LO COMPONEN COMO SU MOTOR, SISTEMA ELECTRICO, ESCAPE (MUFLA), FRENOS, BOMBAS, ETC. ESTESERVICIO SE ENCUENTRA AFECTO AL IMPUESTO SOBRE LAS VENTAS SEGUN EL ARTICULO 1 INCISO D) DE LA LEY. (EL SERVICIO DE ENDEREZADO Y PINTURA SE INCLUYE EN EL CODIGO 502004)"
+                            },
+                            {
+                                "code": "502004",
+                                "name": "SERVICIO DE ENDEREZADO Y PINTURA PARA TODA CLASE DE VEHICULO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL MANTENIMIENTO Y LA REPARACION DE TODA CLASE DE VEHICULOS AUTOMOTORES, TAL COMO: SERVICIO DE ENDEREZADO Y PINTURA (AUTOMOVILES, CAMIONES, MOTOCICLETAS, BUSES Y MICROBUSES, VEHICULOS TO DO TERRENO TIPO JEEP, ETC.)"
+                            },
+                            {
+                                "code": "502007",
+                                "name": "AUTODECORACION",
+                                "description": "EN ESTA CLASE SE INCLUYE LA DECORACION DE AUTOS, ASI COMO LA INSTALACION DE RADIOS, ALARMAS, LUCES ESPECIALES (HALOGENOS), MATABURROS, ESTRIBOS, HILERAS, ETC"
+                            },
+                            {
+                                "code": "502008",
+                                "name": "SERVICIO DE REVISION TECNICA VEHICULAR (DIAGNOSTICOS POR ESCANNER)",
+                                "description": "ESTA CLASE INCLUYE LA REVISION TECNICA VEHICULAR EJECUTADA POR RITEVE. INCLUYE A DEMAS CUALQUIER TIPO DE DIAGNOSTICO EFECTUADO POR ESCANER, PARA TODO TIPO DE AUTOMOVILES, MOTOCICLETAS,Y MAQUINARIA PESADA ENTRE OTROS."
+                            },
+                            {
+                                "code": "503002",
+                                "name": "VENTA DE REPUESTOS USADOS PARA AUTOMOVILES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE REPUESTOS, PARTES, PIEZAS Y ACCESORIOS DE AUTOMOVILES USADOS."
+                            },
+                            {
+                                "code": "503004",
+                                "name": "VENTA DE REPUESTOS NUEVOS PARA AUTOMOVILES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE REPUESTOS NUEVOS, PARTES, PIEZAS Y ACCESORIOS PARA AUTOMOVILES."
+                            },
+                            {
+                                "code": "503005",
+                                "name": "COMERCIALIZACION DE LLANTAS (NEUMATICAS) PARA VEHICULOS AUTOMOTORES",
+                                "description": "EN ESTA CLASE SE INCLUYE VENTA AL POR MAYOR Y DETALLE DE LLANTAS-NEUMATICAS NUEVAS DE CAUCHO, BANDAJES (LLANTAS MACIZAS O HUECAS), BANDAS DE RODADURA INTERCAMBIABLES PARA NEUMATICOS, ETC. PARA VEHICULOS AUTOMOTORES REALIZADA INDEPENDIENTEMENTE DE LA VENTA DE LOS PROPIOS VEHICULOS."
+                            },
+                            {
+                                "code": "503006",
+                                "name": "ACTIVIDADES DE DESARME DE VEHICULOS Y VENTA DE REPUESTOS",
+                                "description": "INCLUYE A LAS PERSONAS FISICAS QUE SE DEDICAN A DESARROLLAR EL SERVICIO DE DESARME DE VEHICULOS, ASI COMO LA VENTA DE LOS REPUESTOS."
+                            },
+                            {
+                                "code": "504001",
+                                "name": "VENTA DE MOTOCICLETAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA YA SEA AL POR MAYOR O AL POR MENOR, DE MOTOCICLETAS TANTO NUEVAS COMO USADAS, PARA LAS CUALES SEGUN EL DECRETO N 32458-H PUBLICADO EN LA GACETA N 131 DEL 07 DE JULIO DEL 2005, EL IMPUESTO SOBRE LAS VENTAS EN LA IMPORTACION Y COMERCIALIZACON SE FIJA A NIVEL DE ADUANAS."
+                            },
+                            {
+                                "code": "504003",
+                                "name": "VENTA DE PARTES O ACCESORIOS DE MOTOCICLETAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR Y AL POR MENOR DE PARTES, ARTICULOS Y ACCESORIOS PARA MOTOCICLETAS."
+                            },
+                            {
+                                "code": "504004",
+                                "name": "SERVICIO DE REPARACION DE TODA CLASE DE MOTOCICLETAS Y SUS PARTES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE REPARACION DE TODA CLASE DE MOTOCICLETAS DE FORMA EXCLUSIVA. SI EL SERVICIO INCLUYE LA REPARACION DE OTRO TIPO DE VEHICULOS SE INCLUYE EN EL CODIGO 502003."
+                            },
+                            {
+                                "code": "505001",
+                                "name": "VENTA DE COMBUSTIBLES (CONOCIDAS COMO GASOLINERAS O BOMBAS)",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE COMBUSTIBLES EN ESTACION DE SERVICIO CON PUNTO FIJO. SI ADEMAS VENDE ACEITES Y LUBRICANTES, SE DEBE INCLUIR UNA ACTIVIDAD SECUNDARIA CON EL CODIGO 505002."
+                            },
+                            {
+                                "code": "505002",
+                                "name": "VENTA DE LUBRICANTES, ACEITES, GRASAS Y PRODUCTOS DE LIMPIEZA PARA AUTOMOTORES",
+                                "description": "ESTA CLASE INCLUYE LA VENTA DE LUBRICANTES, ACEITES, GRASAS, REFRIGERANTES, PRODUCTOS DE LIMPIEZA, ETC. PARA TODO TIPO DE VEHICULOS AUTOMOTORES TANTO AL POR MAYOR COMO AL POR MENOR."
+                            },
+                            {
+                                "code": "505003",
+                                "name": "COMERCIO DE COMBUSTIBLE SIN PUNTO FIJO (PEDDLER)",
+                                "description": "ESTA CLASE INCLUYE LA VENTA DE COMBUSTIBLES SIN PUNTO FIJO BRINDADA POR DISTRIBUIDORES QUE BAJO SU PROPIA CUENTA Y RIESGO, COMERCIALIZAN COMBUSTIBLES MEDIANTE EL USO DE VEHICULOS ACONDICIONADOS PARA ELLO. ESTOS DISTRIBUIDORES SON CONOCIDOS COMO PEDDLERS."
+                            },
+                            {
+                                "code": "511001",
+                                "name": "COMISIONISTAS, AGENTES DE VENTAS, ORGANIZADORES DE SUBASTAS,TIQUETERAS, ETC.",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES DE COMISIONISTAS, AGENTES DE VENTAS, ORGANIZADORES DE SUBASTAS DE CUALQUIER TIPO, TIQUETERAS Y OTROS MAYORISTAS QUE COMERCIAN EN NOMBRE Y POR CUENTA DE TERCEROS PRODUCTOS, BIENES O SERVICIOS Y QUE, POR LO GENERAL, PONEN EN CONTACTO A VENDEDORES Y COMPRADORES Y REALIZAN TRANSACCIONES COMERCIALES EN NOMBRE DE UN PRINCIPAL. SE EXCLUYE LA INTERMEDIACION EN BIENES INMUBLES PARA ESTA ACTIVIDAD VER EL CODIGO 702001."
+                            },
+                            {
+                                "code": "512102",
+                                "name": "VENTA AL POR MAYOR DE FLORES Y PLANTAS DE TODO TIPO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR DE FLORES Y PLANTAS EN BRUTO. SUJETAS A VENTAS EN CONCORDANCIA CON EL ARTICULO 4 DE LA LEY DEL IMPUESTO GENERALSOBRE LAS VENTAS Y SUS REFORMAS Y EL ARTICULO 5 DE SU REGLAMENTO. ADEMAS DEL DECRETO EJECUTIVO 37132-H DEL 17/5/2012."
+                            },
+                            {
+                                "code": "512201",
+                                "name": "COMERCIO AL POR MAYOR DE ALIMENTOS, GRANOS BASICOS, CARNES Y DEMAS COMESTIBLES Y ARTICULOS DE LA CANASTA BASICA",
+                                "description": "SE INCLUYE EL COMERCIO AL POR MAYOR DE AQUELLOS PRODUCTOS CONTEMPL ADOS EN EL ARTICULO 5 INCISO 1) Y SUBINCISO I DEL REGLAMENTO DE LA LEY DEL IMPUESTO SOBRE LAS VENTAS COMPONENTES DE LA CANASTA BASICA ALIMENTARIA CUANDO NO EXISTA UN CODIGO ESPECIFICO - REVISAR LOS DEMAS CODIGOS DE ESTA CATEGORIA BAJO ESTE CODIGO SE DEBEN CONSIDERAR: PRODUCTOS DE PANADERIA, GRANOS BASICOS, PASTAS SIN RELLENO, CARNES FRESCAS NO PREPARADAS Y EMBUTIDOS NO ENLATADOS O ENVASADAS, HUEVOS DE GALLINA, ACEITES Y GRASAS, SAL Y AZUCAR, MIELES NATURALES Y DEMAS ARTICULOS DE CUIDADDO PERSONAL: TALES COMO: PAÑALES, TOALLAS SANITARIAS, CIERTOS JABONES, PAPEL HIGIENICO, DENTRIFICOS(PASTAS DENTALES), CEPILLOS DENTALES, EN-TRE OTROS."
+                            },
+                            {
+                                "code": "512202",
+                                "name": "VENTA AL POR MAYOR DE FRUTAS Y VERDURAS FRESCAS INCLUIDAS O NO EN CANASTA BASICA",
+                                "description": "ESTA CLASE INCLUYE EL COMERCIO AL POR MAYOR DE FRUTAS TALES COMO EN ESTA CLASE SE INCLUYE LA VENTA DE TODO TIPO DE FRUTAS, LEGUMBRES Y HORTALIZAS GRAVADAS O NO CON EL IMPUESTO SOBRE EL VALOR AGREGADO, YA QUE DAN DERECHO AL CREDITO FISCAL, DE CONFORMIDAD CON LO ESTABLECIDO EN EL ARTICULO 30 INCISO F) DEL REGLAMENTO DE LA LEY DEL IMPUESTO SOBRE EL VALOR AGREGADO."
+                            },
+                            {
+                                "code": "512204",
+                                "name": "COMERCIO AL POR MAYOR DE PRODUCTOS LACTEOS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL COMERCIO AL POR MAYOR DE PRODUCTOS LACTEOS"
+                            },
+                            {
+                                "code": "512208",
+                                "name": "COMERCIO AL POR MAYOR DE PRODUCTOS DE CONFITERIA",
+                                "description": "VENTA AL POR MAYOR DE CONFITES, CARAMELOS, CHOCOLATES, MELCOCHAS, ETC."
+                            },
+                            {
+                                "code": "512209",
+                                "name": "COMERCIO AL POR MAYOR DE PRODUCTOS DE TABACO",
+                                "description": "ESTA CLASE INCLUYE LA COMERCIALIZACION (DISTRIBUCION - VENTA) DE PRODUCTOS DEL TABACO(CIGARROS, CIGARRIILLOS, PUROS), INCLUYE TAMBIEN LA COMERCIALIZACION DE FOSFOROS LOS CUALES ESTAN EXENTOS EN VENTAS."
+                            },
+                            {
+                                "code": "512210",
+                                "name": "COMERCIO AL POR MAYOR DE BEBIDAS CON CONTENIDO ALCOHOLICO (IMPORTADORES)",
+                                "description": "VENTA AL POR MAYOR DE LICOR Y SUS DERIVADOS, SUJETOS AL IMPUESTO GENERAL SOBRE LAS VENTAS A LOS NIVELES DE FABRICA, MAYORISTA Y ADUANA. RESOLUCION V-399- DG PUBLICADA EN LA GACETA 11 DEL 16/1/1984."
+                            },
+                            {
+                                "code": "512211",
+                                "name": "COMERCIO AL POR MAYOR DE OTROS ALIMENTOS N.C.P. GRABADOS CON VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR DE OTROS ALIMENTOS NO INCLUIDOS EN LA CANASTA BASICA ALIMENTARIA DEL ARTICULO 5 DEL REGLAMENTO DE LA LEY DEL IMPUESTO SOBRE LAS VENTAS, TALES COMO: PASTAS RELLENAS, CARNES SAZONADAS Y PREPARADAS, EMBUTIDOS ENVASADOS O ENLATADOS, PESCADOS Y ATUNES ENVASADOS O ENLATADOS, ACEITES DE MANI Y OLIVA, ENTRE OTROS."
+                            },
+                            {
+                                "code": "512213",
+                                "name": "COMERCIO AL POR MAYOR DE BEBIDAS GASEOSAS Y CARBONATADAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA COMERCIALIZACION DE BEBIDAS ENVASADAS SIN CONTENIDOALCOHOLICO, ES DECIR FEFRESCOS GASEOSOS Y BEBIDAS CARBONATADAS. LA RECAUDACION DEL IMPUESTO SOBRE LAS VENTAS PARA ESTE TIPO DE MERCANCIA ESTA ESTABLECIDA A NIVEL DE FABRICA, SEGUN RESOLUCION 12-96 DEL 08 DE AGOSTO DE 1996."
+                            },
+                            {
+                                "code": "512214",
+                                "name": "VENTA AL POR MAYOR DE CAFE (EXCEPTO EL ENVASADO, ENLATADO, SOLUBLE, DESCAFEINADO)",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE CAFE CON EXCEPCION DE AQUEL QUE SE COMERCIALIZA ENVASADO O ENLATADO, ASI COMO EL QUE TIENE PRESENTACIONES COMO SOLUBLE, DESCAFEINADO O SABORIZADO, ENTRE OTROS."
+                            },
+                            {
+                                "code": "512217",
+                                "name": "COMERCIO AL POR MAYOR DE VINOS. BEBIDAS FERMENTADAS Y NO FERMENTADAS",
+                                "description": "ESTA CLASE INCLUYE EL COMERCIO AL POR MAYOR DE VINOS, INCLUSO VINOS ESPUMANTES Y ADEREZADOS. SE INCLUYEN LOS VINOS REFORZADOS, DE MARSALA Y JEREZ.OTRAS BEBIDAS ALCOHOLICAS NO FERMENTADAS COMO PERADA, SIDRA, AGUAMIEL Y AKE. Y BEBIDAS FERMENTADAS COMO LA CERVEZA,CHAMPAN, CAVA, ETC."
+                            },
+                            {
+                                "code": "512225",
+                                "name": "COMERCIO AL POR MAYOR DE BEBIDAS NO ALCOHOLICAS (JUGOS DEFRUTAS, VEGETALES) Y AGUA EMBOTELLADA",
+                                "description": "COMPRENDE LA VENTA Y DISTRIBUCION DE BEBIDAS SIN CONTENIDO ALCOHOLICO,BEBIDAS ADEREZADAS CON JUGOS DE FRUTAS, JARABES (CONCENTRADOS) Y OTRAS SUSTANCIAS, ASI COMO SE INCLUYE LA VENTA AL POR MAYOR DE AGUA EMBOTELLADA"
+                            },
+                            {
+                                "code": "512232",
+                                "name": "COMERCIO AL POR MAYOR DE PRODUCTOS SUSTITUTOS DEL AZUCAR",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE PRODUCTOS SUSTITUTOS DEL AZUCAR COMO CRISTALOSA, SPLENDA, NO SUCAR, ECT."
+                            },
+                            {
+                                "code": "512233",
+                                "name": "COMERCIO AL POR MAYOR DE CARNES DE TODO TIPO (PREPARADAS SAZONADAS CONDIMENTADAS EMPANIZADAS)",
+                                "description": "SE INCLUYE EN ESTA ACTIVIDAD TODAS LAS CARNES ROJAS Y BLANCAS PREPARADAS, CONDIMENTADAS, EMPANIZADAS, AHUMADAS, ETC. AFECTAS A VENTAS DE ACUERDO AL ARTICULO5 DEL REGLAMENTO DE LA LEY GENERAL SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "512234",
+                                "name": "COMERCIO AL POR MAYOR DE CERVEZA IMPORTADA",
+                                "description": "EN ESTA CLASE DE INCLUYE LA VENTA DE CUALQUIER TIPO DE CERVEZA QUE NO HAYA SIDO FABRICADA EN COSTA RICA. EL DECRETO 28287-H. DEL 08-12-1999, ESTABLECE LA OBLIGACION DE INSCRIBIRSE PARA LOS IMPORTADORES DE CERVEZA Y LOS DISTRIBUIDORES MAYORISTAS DE ESTE PRODUCTO EN PARTICULAR."
+                            },
+                            {
+                                "code": "512235",
+                                "name": "VENTA AL POR MAYOR DE FRUTAS Y VERDURAS FRESCAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE TODO TIPO DE FRUTAS, LEGUMBRES Y HORTALIZAS GRAVADAS O NO CON EL IMPUESTO SOBRE EL VALOR AGREGADO, YA QUE DAN DERECHO AL CREDITO FISCAL, DE CONFORMIDAD CON LO ESTABLECIDO EN EL ARTICULO 30 INCISO F) DEL REGLAMENTO DE LA LEY DEL IMPUESTO SOBRE EL VALOR AGREGADO."
+                            },
+                            {
+                                "code": "512237",
+                                "name": "COMERCIO AL POR MAYOR DE ALIMENTOS Y PRODUCTOS N.C.P. EXCENTOS DE VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE CUALQUIER PRODUCTO, ALIMENTO Y ARTICULO NO CONTEMPLADO DENTRO DE LA SECCION DE VENTA AL POR MAYOR DE OTROS PRODUCTOS. NO ESTAN SUJETOS AL IMPUESTO SOBRES LAS VENTAS DE ACUERDO AL ART. 5 DE LA LEY DEL IMPUESTO GENERAL SOBRE LAS VENTAS"
+                            },
+                            {
+                                "code": "513101",
+                                "name": "VENTA AL POR MAYOR DE CALZADO, PRODUCTOS TEXTILES; PRENDASDE VESTIR;",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR DE PRODUCTOS TEXTILES. (TELAS DE TODA CLASE), ASI COMO LA VENTA AL POR MAYOR DE TODO TIPO DE CALZADO."
+                            },
+                            {
+                                "code": "513501",
+                                "name": "VENTA AL POR MAYOR DE PREPARADOS Y/O ARTICULOS PARA LA LIMPIEZA DE USO GENERAL",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE DETERGENTES, CHAMPUES, LIMPIADORES,DESINFECTANTES, JABONES, CERAS, ETC; ASI COMO TOALLAS SANITARIAS, PALOS DE PISO O GANCHOS DE LIMPIEZA, ESCOBAS, MECHAS (TRAPOS DE LIMPIEZA), ETC"
+                            },
+                            {
+                                "code": "513601",
+                                "name": "VENTA AL POR MAYOR EQUIPO MEDICO ACCESORIOS MEDICAMENTOS PRODUC FARMACEUTICO EXENTOS DE VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA Y DISTRIBUCION DE TODA CLASE DE EQUIPOS MEDICOS E INSTRUMENTOS MEDICO-QUIRURGICOS, REQUIRIDOS POR LA CAJA COSTARRICENSE DE SEGURO SOCIAL PARA LA PRESTACION DE SUS SERVICIOS. ESTE EQUIPO E INSTRUMENTOS SE ENCUENTRAN EXENTOS DEL IMPUESTO SOBRE LAS VENTAS SEGUN EL ART.5 DE DICHO REGLAMENTO Y MEDICAMENTOS Y PRODUCTOS FARMACEUTICOS."
+                            },
+                            {
+                                "code": "513602",
+                                "name": "VENTA AL POR MAYOR DE PRODUCTOS VETERINARIOS GRAVADOS CON IVA",
+                                "description": "ESTA CLASE INCLUYE LA COMERCIALIZACION DE PRODUCTOS MEDICOS VETERINARIOS"
+                            },
+                            {
+                                "code": "513604",
+                                "name": "VENTA AL POR MAYOR EQUIPO MEDICO ACCESORIO MEDICAMENTO PRODUC FARMACEUTICO GRABADOS CON VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA Y DISTRIBUCION DE TODO TIPO DE ARTICULOS Y EQUIPO MEDICO GRAVADOS CON EL IMPUESTO SOBRE LAS VENTAS, A HOSPITALES, CLINICAS, MEDICOS Y OTROS."
+                            },
+                            {
+                                "code": "513710",
+                                "name": "VENTA AL POR MAYOR DE LIBROS Y TEXTOS EDUCATIVOS INCLUIDOS EN CANASTA BASICA",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE LIBROS DE TEXTO, DICCIONARIOS, TEXTOS DE PRIMARIA, SECUNDARIA, PARAUNIVERSITARIA, LIBROS UNIVERSITARIOS Y SIMILARES INCLUIDOS CANASTA BASICA"
+                            },
+                            {
+                                "code": "513901",
+                                "name": "VENTA AL POR MENOR DE ARTICULOS DEPORTIVOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE ARTICULOS DEPORTIVOS A LOS CONSUMIDORES FINALES."
+                            },
+                            {
+                                "code": "513904",
+                                "name": "VENTA AL POR MAYOR DE SUMINISTROS Y ARTICULOS DE LIBRERIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR DE TODO TIPO DE SUMINISTROS DE LIBRERIA Y ARTICULOS RELACIONADOS."
+                            },
+                            {
+                                "code": "513906",
+                                "name": "VENTA AL POR MAYOR DE ARTICULOS, ARTEFACTOS, DISCOS Y MUEBLES PARA EL HOGAR",
+                                "description": "ESTA CLASE ABARCA LA VENTA AL POR MAYOR DE APARATOS, ARTICULOS Y EQUIPO DE USO DOMESTICO (POR EJEMPLO, MUEBLES, ARTEFACTOS, CUBIERTOS, ARTICULOS DE ILUMINACION, APARATOS DE RADIO Y TELEVISION, CRISTALERIA, UTENSILIOS DE MADERA, PAPEL TAPIZ PARA PAREDES Y ARTICULOS PARA RECUBRIR PISOS, ETC.); PRODUCTOS FARMACEUTICOS Y MEDICINALES, INSTRUMENTOS Y DISPOSITIVOS QUIRURGICOS Y ORTOPEDICOS, ARTICULOS DE PERFUMERIA, COSMETICOS Y JABONES; Y PRODUCTOS DIVERSOS PARA EL CONSUMIDOR (POR EJEMPLO, PAPEL Y CARTON, LIBROS, REVISTAS, PERIODICOS Y UTILES DE ESCRITORIO, ARTICULOS FOTOGRAFICOS Y OPTICOS, JUEGOS Y JUGUETES, RELOJES Y ARTICULOS DE JOYERIA, ARTICULOS DEPORTIVOS (INCLUSO BICICLETAS), ARTICULOS DE CUERO Y ACCESORIOS DE VIAJE. INCLUYE LA VENTA AL POR MAYOR DE DISCOS COMPACTOS, DISCOS DE REPRODUCCION FONOGRAFICA, PARA HACER QUE LA AUDICION SEA DE LARGA DURACION."
+                            },
+                            {
+                                "code": "513907",
+                                "name": "VENTA AL POR MAYOR DE DISCOS COMPACTOS Y OTROS DISPOSITIVOSDE GRABACION",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR DE DISCOS COMPACTOS, DISCOS DE REPRODUCCION FONOGRAFICA PARA HACER QUE LA AUDICION SEA DE LARGA DURACION.INCLUYE OTROS DISPOSITIVOS DE GRABACION. VIAJE."
+                            },
+                            {
+                                "code": "513910",
+                                "name": "VENTA AL POR MAYOR DE TODO TIPO DE ARTICULOS POR CATALOGO",
+                                "description": "ESTA CLASE INCLUYE LAS VENTAS AL POR MAYOR (MAYORISTAS) DE PRODUCTOS QUE OPERAN BAJO LA MODALIDAD DE VENTAS DIRECTAS, POR CATALOGO, PIRAMIDALES, MULTINIVEL Y SIMILARES. AFECTAS AL IMPUESTO GENERAL SOBRE LAS VENTAS DE ACUERDO A LA RESOLUCION DGT-R-047-2014."
+                            },
+                            {
+                                "code": "514101",
+                                "name": "VENTA AL POR MAYOR DE COMBUSTIBLES SOLIDOS (LEÑA Y SIMILARES)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR DE COMBUSTIBLES SOLIDOS TALES COMO: LEÑA, TURBA, LIGNITO, ANTRACITA, ENTRE OTROS. LA VENTA DEL CARBON SE ENCUENTRA CONTEMPLADA EN LA ACT 514103, AFECTA AL IMPUESTO DE VENTAS."
+                            },
+                            {
+                                "code": "514103",
+                                "name": "VENTA AL POR MAYOR DE COMBUSTIBLES SOLIDOS (CARBON)",
+                                "description": "ESTA ACTIVIDAD INCLUYE UNICAMETE LA VENTA AL POR MAYOR DE CARBON, AFECTA AL IMPUESTO DE VENTAS, SEGUN OFICIO DE LA DGT NO. 1232 DE FECHA 18/08/98."
+                            },
+                            {
+                                "code": "514201",
+                                "name": "VENTA AL POR MAYOR DE METALES Y MINERALES METALIFEROS",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE MINERALES METALIFEROS Y DE METALES EN FORMAS PRIMARIAS ES DECIR, EN SU ESTADO NATURAL DE EXTRACCION, SIN QUE HAYA PASADO POR NINGUN PROCESAMIENTO INDUSTRIAL."
+                            },
+                            {
+                                "code": "514304",
+                                "name": "VENTA AL POR MAYOR DE EQUIPO DE AIRE ACONDICIONADO Y CALENTADORES (ELECTRICOS, SOLARES, ETC.)",
+                                "description": "ESTA CLASE INCLUYE UNICAMENTE LA VENTA DE EQUIPO DE AIRE ACONDICIONADO Y TODO TIPO DE CALENTADORES. LA INSTALACION Y MANTENIMIENTO DE ESTOS EQUIPOS SE INCLUYE EN EL CODIGO 453006."
+                            },
+                            {
+                                "code": "514308",
+                                "name": "VENTA AL POR MAYOR DE MATERIALES PARA LA CONTRUCCION, ARTICULOS DE FERRETERIA, EQUIPO Y MATERIALES DE FONTANERIA Y CALEFACCION",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE MADERA NO TRABAJADA Y PRODUCTOS RESULTANTES DE LA ELABORACION PRIMARIA DE LA MADERA, ASI COMO LA VENTA DE PINTURAS, LACAS, BARNICES, MATERIALES DE CONTRUCCION, PIEZAS Y ACCESORIOS Y VIDRIOS PLANOS."
+                            },
+                            {
+                                "code": "514701",
+                                "name": "VENTA AL POR MAYOR DE PRODUCTOS,SUSTANCIAS O REACTIVOS QUIMICOS Y SOLVENTES EN GENERAL",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE GASES INDUSTRIALES, INCLUSO GASES ELEMENTALES; AIRE LIQUIDO Y AIRE COMPRIMIDO, ACETILENO, GASES REFRIGERANTES, MEZCLAS DE GASES INDUSTRIALES, OXIGENO, ETC. ASIMISMO, SUSTANCIAS QUIMICAS COMO HIDROCARBUROS, BENCENO, TOLUENO, XILENO Y OTROS PRODUCTOS DE LA DESTILACION DE ALQUITRAN DE HULLA Y ACEITE MINERAL, METANOL Y ALCOHOLES SUPERIORES EXCEPTO ALCOHOL ETILICO; CETONAS Y QUINONAS INCLUSO ACIDO ACITICO, MATERIAS COLORANTES DE ORIGEN ANIMAL Y VEGETAL, COLORANTES ORGANINCOS SINTETICOS, MATERIALES VOLATILES DE LA DESTILACION DE LA MADERA, TINTES SINTETICOS, LEJIA, CLORO, RESINA, ETC. LO ANTERIOR, TANTO PARA USO INDUSTRIAL COMO PARA USO DOMESTICO. ASI COMO REACTIVOS QUIMICOS EN GENERAL Y OTROS SOLVENTES INDUSTRIALES."
+                            },
+                            {
+                                "code": "514901",
+                                "name": "VENTA AL POR MAYOR Y AL POR MENOR DE CHATARRA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR Y AL POR MENOR DE CHATARRA DE METAL Y CAUCHO. (OFICIO SDRC-071/07)."
+                            },
+                            {
+                                "code": "514903",
+                                "name": "VENTA AL POR MAYOR DE PRODUCTOS PARA USO AGROPECUARIO Y VENTA DESECHOS ORGANICOS E INORGANICOS",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE FERTILIZANTES, NEMATICIDAS, FUNGICIDAS, PLAGUICIDAS, ABONOS, HERBICIDAS, INSECTICIDAS, ETC. ADEMAS INCLUYE LA VENTA DE DESECHOS DE FRUTAS, LEGUMBRES, HORTALIZAS, VERDURAS Y CARNES (HUESO, PELLEJO), ENTIENDASE COMO DESECHOS ORGANICOS (PIEDRA POMEZ, CARBON,ETC), DESECHOS DE LEGUMINOSAS (LENTEJAS, SOYA, FRIJOLES, GARBANZOS, ETC) ASI COMO DE CEREALES (ARROZ, MAIZ, TRIGO, CEBADA, CENTENO, SORGO, AVENA, ETC). ASIMISMO SE INCLUYE LA VENTA DE DESECHOS INORGANICOS TALES COMO PLASTICOS, TELAS SINTETICAS, ACEITES Y GRASAS, LOS CUALES SE RECICLAN PARA PRODUCIR CIERTOS COMBUSTIBLES COMO BIODISEL, ETC)."
+                            },
+                            {
+                                "code": "515001",
+                                "name": "VENTA AL POR MAYOR DE MAQUINARIA Y EQUIPO INDUSTRIAL, DE CONSTRUCCION, INGENIERIA CIVIL Y OTROS, ASI COMO SUS ACCESORIOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR DE MAQUINARIA Y EQUIPO INDUSTRIALDE CONSTRUCCION Y DE INGENIERIA CIVIL, MAQUINARIA Y EQUIPO PARA LA INDUSTRIAS TEXTIL, DE LA MADERA, METALURGICA, DE PISCINA, ET5C. ASI COMO LA VENTA AL POR MAYOR DE ACCESORIOS CONEXOS."
+                            },
+                            {
+                                "code": "515002",
+                                "name": "VENTA AL POR MAYOR DE REPUESTOS Y/O ACCESORIOS PARA MAQUINARIA Y EQUIPO AGROPECUARIO",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE REPUESTOS Y/O ACCESORIOS PARA MAQUINARIA Y EQUIPO AGROPECUARIO"
+                            },
+                            {
+                                "code": "515003",
+                                "name": "VENTA AL POR MAYOR DE MAQUINARIA Y EQUIPO AGROPECUARIO",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE MAQUINARIA Y EQUIPO AGROPECUARIO QUE ESTAN EXENTOS DEL IMPUESTO SOBRE LAS VENTAS DE AUCERDO CON EL ART.5 DEL REGLAEMNTO DE LA LEY DEL IMPUESTO GENERAL SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "515004",
+                                "name": "VENTA AL POR MAYOR DE EXTINTORES Y EQUIPO SIMILAR",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MAYOR DE EQUIPO PARA IMPELER, ESPARCIR Y ASPERJAR LIQUIDOS Y POLVOS, ACCIONADO A MANO O ONO. ADEMAS DE LAS PISTOLAS ASPERSORAS Y APARATOS SIMILARES, COMOLOS EXTINGUIDORES DE INCENDIO, MAQUINAS DE LIMPIEZA MEDIANTE ASPERSION DE ARENA A PRESION, LAS MAQUINAS DE LIMPIEZA A VAPOR Y OTRAS MAQUINAS SIMIALRES DE PROYECCION DE CHORRO."
+                            },
+                            {
+                                "code": "515201",
+                                "name": "VENTA AL POR MAYOR DE EQUIPO DE COMPUTO, SUS PARTES Y ACCESORIOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE TODO TIPO DE ACCESORIOS Y_EQUIPOS DE COMPUTO, TALES COMO COMPUTADORAS DE ESCRITORIO, PORTATILES Y SUS ACCESORIOS: TECLADO,MOUSE, CAMARAS, MONITORES, IMPRESORAS Y SUS TINTAS, DISPOSITIVOS DE MEMORIA (DIPOSITIVOS EXTRAIBLES Y DISCOS), SOFTWARE Y HARDWARE EN GENERAL."
+                            },
+                            {
+                                "code": "515203",
+                                "name": "VENTA AL POR MAYOR DE EQUIPO Y SUMINISTROS DE OFICINA",
+                                "description": "SE REFIERE A LA VENTA AL POR MAYOR DE TODO TIPO DE OFICINA Y SUMINISTROS, DENTRO DE LOSQUE SE INCLUYEN EQUIPO Y ARTICULOS PARA COMIUNICACION CENTRALES TELEFONICAS, TELEFONOS, CELULARES, FAX,ETC."
+                            },
+                            {
+                                "code": "519003",
+                                "name": "VENTA AL POR MAYOR DE EQUIPO, ARTICULOS Y ACCESORIOS DE BELLEZA, COSMETICOS E HIGIENE PERSONAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MAYOR DE TODO TIPO DE EQUIPO, ACCESORIOS Y ARTICULOS RELACIONADOS CON LA BELLEZA Y EL CUIDADO PERSONAL."
+                            },
+                            {
+                                "code": "519005",
+                                "name": "VENTA AL POR MAYOR DE EQUIPO PARA CAMPO DE JUEGOS (PLAY)",
+                                "description": "EN ESTA CLASE SE INCLUYEN TODO LO REFERENTE AL EQUIPO PARA LOS CAMPOS DE JUEGOS O TAMBIEN CONOCIDOS COMO PLAY."
+                            },
+                            {
+                                "code": "519006",
+                                "name": "DISTRIBUCION Y COMERCIALIZACION AL POR MAYOR DE MATERIAL DEEMPAQUE",
+                                "description": "EN ESTA CLASE SE INCLUYE LA DISTRIBUCION Y COMERCIALIZACION DE MATERIAL DE EMPAQUE TAL COMO PLASTICO ADHESIVO, CINTAS, BOLSAS, BANDEJAS, ETC"
+                            },
+                            {
+                                "code": "519010",
+                                "name": "COMERCIALIZACION Y DISTRIBUCION AL POR MAYOR DE ALIMENTOS PREPARADOS PARA ANIMALES.",
+                                "description": "ESTA CLASE INCLUYE LA COMERCIALIZACION DE ALIMENTOS PREPARADOS PARA ANIMALES DOMESTICOS: ALIMENTOS COMPUESTOS DE MEZCLAS DE VARIOS INGREDIENTES O DE INGREDIENTES ENVASADOS O TRATADOS ESPECIALMENTE PARA QUE SEAN UN ALIMENTO ADECUADO PARA PERROS, GATOS, AVES Y OTROS ANIMALES DOMESTICOS. ELABORACION DE ALIMENTOS PREPARADOS PRINCIPALMENTE PARA ANIMALES DE GRANJA, INCLUSO MEZCLAS PRELIMINARES, ALIMENTOS CONCENTRADOS, FORRAJE EDULCORADO Y ALIMENTOS SUPLEMENTARIOS. LA ELABORACION DEESTOS ALIMENTOS SE ENCUENTRA EN EL CODIGO 153301."
+                            },
+                            {
+                                "code": "519011",
+                                "name": "COMERCIO AL POR MAYOR DE EQUIPO Y ACCESORIOS PARA PESCA DEPORTIVA O ARTESANAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE EQUIPO Y ACCESORIOS PARA TODO TIPO DE PESCA , SEA ARTESANAL O DEPORTIVA."
+                            },
+                            {
+                                "code": "519013",
+                                "name": "COMERCIALIZACION AL POR MAYOR DE SUPLEMENTOS ALIMENTICIOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA COMERCIALIZACION DE PRODUCTOS ALIMENTICIOS, UTILIZADOS COMO SUPLEMENTOS, VITAMINICOS, ETC, ENLATADOS, EMPACADOS O ENVASADOS, AFECTOS AL IMPUESTO SOBRE LAS VENTAS"
+                            },
+                            {
+                                "code": "519014",
+                                "name": "VENTA AL POR MAYOR DE POLEN Y/O SEMILLAS PARA USO AGRICOLA",
+                                "description": "ESTA ACTIVIDAD INCLUYE LA VENTA DE POLEN Y/O DE SEMILLAS DE USO AGRICOLA DETALLADAS EN EL ART 5 DEL REGLAMENTO DEL IMPUESTO SOBRE LAS VENTAS, TALES COMO LAS SEMILLAS DE TODA CLASE Y TODO TIPO DE MATERIAL DE REPRODUCCION Y POR LO TANTO EXENTAS DE VENTAS"
+                            },
+                            {
+                                "code": "519015",
+                                "name": "VENTA AL POR MAYOR DE OTROS PRODUCTOS NO ESPECIALIZADOS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LA VENTA AL POR MAYOR ESPECIALIZADA DE PRODUCTOS NO ABARCADOS EN NINGUNA DE LAS CLASES ANTERIORES Y LA VENTA AL POR MAYOR DE UNA VARIEDAD DE PRODUCTOS QUE NO REFLEJAN UNA ESPECIALIZACION PARTICULAR"
+                            },
+                            {
+                                "code": "519016",
+                                "name": "VENTA AL POR MAYOR DE ARTICULOS Y ACCESORIOS ELECTRONICOS",
+                                "description": "SE INCLUYE LA VENTA AL POR MAYOR DE ARTICULOS Y ACCESORIOS ELECTRONICOS."
+                            },
+                            {
+                                "code": "521101",
+                                "name": "SUPERMERCADOS Y ALMACENES DE ABARROTES EN CADENA",
+                                "description": "ESTA CLASE INCLUYE LOS ALMACENES DE VENTA AL POR MENOR DE UNA GAMA DE PRODUCTOS NUEVOS COMPUESTA PRINCIPALMENTE DE ALIMENTOS, BEBIDAS Y TABACO. SUELEN REALIZAR ESTE TIPO DE ACTIVIDAD LOS DENOMINADOS ALMACENES GENERALES, CUYA PRINCIPAL ACTIVIDAD ES LA VENTA DE VIVERES, PERO QUE ADEMAS VENDEN OTRAS CLASES DE MERCANCIAS, COMO PRENDAS DE VESTIR, MUEBLES, APARATOS DE USO DOMESTICO, ARTICULOS DE FERRETERIA, COSMETICOS, ETC."
+                            },
+                            {
+                                "code": "521102",
+                                "name": "VENTA AL POR MENOR DE ESPECIAS, SALSAS Y CONDIMENTOS",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE ESPECIAS, SALSAS Y CONDIMENTOS"
+                            },
+                            {
+                                "code": "521201",
+                                "name": "ABASTECEDORES, PULPERIAS O MINI-SUPER",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS LOCALES EN DONDE SE VENDEN ARTICULOS DE ALIMENTACION,LIMPIEZA Y MERCERIA Y OTROS NECESARIOS PARA LA CASA DE HABITACION."
+                            },
+                            {
+                                "code": "521202",
+                                "name": "PULPERIAS ( MINI-SUPER)(SIN CANTINA)",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS PULPERIAS Y MINI SUPER SIN QUE EN ESTA HAYA CANTINA"
+                            },
+                            {
+                                "code": "521901",
+                                "name": "TIENDAS O ALMACENES POR DEPARTAMENTOS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS TIENDAS O LOS ALMACENES SEPARADOS POR SECCIONES O DEPARTAMENTOS."
+                            },
+                            {
+                                "code": "522001",
+                                "name": "COMERCIO AL POR MENOR DE CONFITES Y OTROS PRODUCTOS RELACIONADOS (CONFITERIA)",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE CONFITES, CARAMELOS, CHOCOLATES, MELCOCHAS, Y OTROS ARTICULOS DULCES"
+                            },
+                            {
+                                "code": "522002",
+                                "name": "VENTA DE CARNES (RES, POLLO,CERDO) INCLUIDAS EN LA CANASTA BASICA",
+                                "description": "ESTA CLASE INCLUYE LA VENTA DE CARNES DE RES Y CERDO (TODAS LAS CARNES DE RES O DE CERDO FRESCAS, REFRIGERADAS O CONGELADAS) CARNES DE POLLO (ALAS, MENUDO O VISCERAS, MUSLO, PATAS, PECHUGA Y POLLO ENTERO Y LIMPIO) DE CONFORMIDAD CON EL DE- CRETO 37132-H REFERENTE A LA CANASTA BASICA. NO SE INCLUYEN LAS SAZONADAS, MARIN ADAS, TENDERIZADO, ADOBADAS, CONDIMENTADAS, EMPANIZADAS Y/O PREPARADAS O PRECOCIDAS, DE CONFORMIDAD CON EL DECRETO N 41342-H MODIFICACION AL SUB INCISO I \"CANASTA BASICA TRIBUTARIA\" DEL INCISO 1) DEL ARTICULO 5 DEL DECRETO EJECUTIVO N 14082-H RLIGSV, PUBLICADO EN LA GACETA N 217 DEL 22 DE NOVIEMBRE 2018."
+                            },
+                            {
+                                "code": "522003",
+                                "name": "MACROBIOTICAS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL COMERCIO AL POR MENOR DE PRODUCTOS Y ALIMENTOS MACROBIOTICOS."
+                            },
+                            {
+                                "code": "522004",
+                                "name": "VENTA DE VERDURAS Y FRUTAS EXENTOS DE IVA",
+                                "description": "ESTA CLASE INCLUYE A LAS VERDULERIAS. ADEMAS SE INCLUYE LA VENTA DE FRUTAS CONSIDERADAS EN LA NUEVA CANASTA BASICA- (DECRETO NO. 37132-H)."
+                            },
+                            {
+                                "code": "522005",
+                                "name": "VENTA DE MARISCOS Y/O PESCADO (PESCADERIAS O MARISQUERIAS)INCLUIDOS EN LA CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE PESCADO (ATUN UNICAMENTE ENTERO, ATUN EN CONSERVA SOLO O CON VEGETALES, EN AGUA O EN ACEITE, PESCADOS (ENTEROS, EN PARTESO EN FILET), DEBEN SER FRESCOS, REFRIGERADOS O CONGELADOS, EN SALMUERA, SALADOS O DESECADOS, EXCEPTO LOS ENLATADOS O ENVASADOS) Y DE CRUSTACEOS Y MOLUSCOS (ALMEJAS, CALAMARES BLANDO Y TORPEDO, CHORAS, CANGREJOS INCLUYENDO LAS JAIBAS,CAMARONDE LOS TIPOS:FIDEL, PINK, CAMELLO, CAMELLITO, TITI Y CAMARON DE CULTIVO,PIANGUASLO ANTERIOR DE ACUERDO AL DECRETO 37132-H Y 38747-H AMBOS REFERENTES A LA CANAS TA BASICA. EN ESTE CODIGO SE INCLUYEN ,LAS PESCADERIAS Y MARISQUERIAS."
+                            },
+                            {
+                                "code": "522007",
+                                "name": "LICORERIAS Y/O DEPOSITO DE LICORES (VENTA AL POR MENOR)",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE BEBIDAS ALCOHOLICAS EMBOTELLADAS, Y QUE NO IMPLICA SU CONSUMO EN ESE ESTABLECIMIENTO. LAS RESOLUCIONES V-399 DEL 16-01-1984 Y 32-95 DEL 30-11-1995, ESTABLECE LA RECAUDACION DEL IMPUESTO DE VENTAS PARA REFRESCOS, CERVEZAS Y LICORES BAJO EL SISTEMA A NIVEL DE FABRICA Y ADUANAS. POR LO TANTO,LAS LICORERIA Y DEPOSITOS VENDEN ESTOS PRODUCTOS COMO EXENTOS DEL TRIBUTO. EN CASO QUE EL ESTABLECIMIENTO EXPENDA OTROS PRODUCTOS COMO BOCADILLOS, SE DEBE AGREGAR UNA ACTIVIDAD SECUNDARIA."
+                            },
+                            {
+                                "code": "522008",
+                                "name": "VENTA AL POR MENOR DE HUEVOS DE GALLINA INCLUIDOS EN LA CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE HUEVOS DE GALLINA FRESCOS CON CASCARON, EXENTOS DEL IMPUESTO GENERAL SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "522009",
+                                "name": "VENTA DE FRUTAS GRAVADAS CON IVA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE FRUTAS GRAVADAS TALES COMO: CIRUELAS, DURAZNOS, PERAS, MANZANAS, UVAS E HIGOS, ENTRE OTRAS. ADEMAS DE CUALQUIER FRUTA ENVASADA, ENLATADA Y DESHIDRATADA."
+                            },
+                            {
+                                "code": "522010",
+                                "name": "VENTA DE EMBUTIDOS Y CARNES (RES, POLLO, CERDO)INCLUIDAS ENLA CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE EMBUTIDOS Y CARNES DE RES Y CERDO (TODAS LAS CERNES DE RES O DE CERDO FRESCAS, REFRIGERADAS O CONGELADAS),CARNES DE POLLO (ALAS, MENUDOS O VISCERAS, MUSLO, PATAS, PECHUGA, POLLO ENTERO Y LIMPIO), EMBUTIDOS (CHORIZO, MORTADELA, PATE, SALCHICHAS, SALCHICHON, EXCEPTO LOS ENLATADOS O ENVASADOS)LO ANTERIOR DE CONFORMIDAD CON EL DECRETO 37132-H REFERENTE A LA CANASTA BASICA."
+                            },
+                            {
+                                "code": "522011",
+                                "name": "PREPARACION, SERVICIO Y VENTA DE FRUTAS PICADAS Y BEBIDAS DE FRUTAS Y/O LEGUMBRES.",
+                                "description": "ESTA CLASE COMPRENDE LA PREPARACION, EL SERVICIO Y LA VENTA DE FRUTAS PICADAS ASI COMO DE BEBIDAS (FRUTAS Y LEGUMBRES) PARA SU CONSUMO INMEDIATO EN EL LOCAL COMO FUERA DEL MISMO. INCLUYE A LOS VENDEDORES AMBULANTES DE ESTOS PRODUCTOS."
+                            },
+                            {
+                                "code": "522012",
+                                "name": "COMERCIO AL POR MENOR DE BEBIDAS GASEOSAS Y CARBONATADAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA COMERCIALIZACION DE BEBIDAS ENVASADAS SIN CONTENIDOALCOHOLICO, ES DECIR FEFRESCOS GASEOSOS Y BEBIDAS CARBONATADAS. LA RECAUDACION DEL IMPUESTO SOBRE LAS VENTAS PARA ESTE TIPO DE MERCANCIA ESTA ESTABLECIDA A NIVEL DE FABRICA, SEGUN RESOLUCION 12-96 DEL 08 DE AGOSTO DE 1996."
+                            },
+                            {
+                                "code": "522013",
+                                "name": "COMERCIO AL POR MENOR DE AGUA EMBOTELLADA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE AGUA EMBOTELLADA. LA CUAL SE ENCUENTRA AFECTA AL IMPUESTO GENERAL SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "522014",
+                                "name": "VENTA DE FRUTAS INCLUIDAS EN LA NUEVA CANASTA BASICA",
+                                "description": "ESTA CLASE SE INCLUYE LA COMERCIALIZACION DE FRUTAS INCLUIDAS EN LA NUEVA CANASTA BASICA. (DECRETO NO. 37132)."
+                            },
+                            {
+                                "code": "522015",
+                                "name": "VENTA AL POR MENOR DE CAFE (EXCEPTO EL ENVASADO, ENLATADO, SOLUBLE, DESCAFEINADO)",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE CAFE CON EXCEPCION DE AQUEL QUE SE COMERCIALIZA ENVASADO O ENLATADO, ASI COMO EL QUE TIENE PRESENTACIONES COMO SOLUBLE, DESCAFEINADO O SABORIZADO, ENTRE OTROS."
+                            },
+                            {
+                                "code": "522016",
+                                "name": "COMERCIO AL POR MENOR DE PRODUCTOS DE TABACO",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE PRODUCTOS DE TABACO, TALES COMO CIGARROS, PUROS, CIGARRILLOS ENTRE OTROS"
+                            },
+                            {
+                                "code": "522017",
+                                "name": "VENTA DE EMBUTIDOS Y CARNES (RES, POLLO, CERDO, CABALLO,ETC) GRAVADAS CON IVA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE CUALQUIER TIPO DE CARNE SAZONADA, MARINADA,ADOBADAS, CONDIMENTADAS,EMPANIZADAS Y/O CARNES PREPARADAS. ADEMAS INCLUYE LOS CORTES FINOS DE LOMO Y LOMITO DE CERDO, LOMO Y LOMITO DE RES Y SUS DERIVADOS,EN TODAS LAS PRESENTACIONES O CORTES COMPUESTOS POR ESTOS, T-BONE, SIRLOIN, PORTER HOUSE, DELMONICO O RIBEYE, CARNE TENDERIZADA DE CERDO O RES. ASIMISMO, LA CARNE DE OTROS TIPOS DE ANIMALES O AVES NO INCLUIDA EXPRESAMENTE COMO EXENTA EN LA CA NASTA BASICA. ADEMAS INCLUYE LOS EMBUTIDOS ENLATADOS O ENVASADOS."
+                            },
+                            {
+                                "code": "522018",
+                                "name": "VENTA DE PESCADOS Y/O MARISCOS (PESCADERIAS O MARISQUERIAS) GRAVADOS EN VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYEN TODOS LOS PRODUCTOS DE PESCADO Y MARISCOS ENLATADOS O ENVASADOS, YA SEAN SAZONADOS, COMDIMENTADOS, EMPANIZADOS Y DEMAS PREPARADOS. ADEMAS SE INCLUYEN LOS SIGUIENTES PESCADOS: ATUN EN FILET, SALMON ENTERO O EN FILETROBALO ENTERO O EN FILET Y BACALAO ENTERO O EN FILET."
+                            },
+                            {
+                                "code": "522021",
+                                "name": "VENTA AL POR MENOR DE OTROS ALIMENTOS NO INCLUIDOS EN CANASTA BASICA",
+                                "description": "VENTA AL POR MENOR DE OTROS ALIMENTOS NO INCLUIDOS EN CANASTA BASICA"
+                            },
+                            {
+                                "code": "523101",
+                                "name": "FARMACIAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS FARMACIAS (UNICAMENTE VENTA DE MEDICAMENTOS)."
+                            },
+                            {
+                                "code": "523102",
+                                "name": "VENTA AL POR MENOR DE COSMETICOS Y PERFUMERIA",
+                                "description": "VENTA AL POR MENOR DE COSMETICOS Y PERFUMERIA"
+                            },
+                            {
+                                "code": "523201",
+                                "name": "BAZARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS BAZARES"
+                            },
+                            {
+                                "code": "523202",
+                                "name": "VENTA AL POR MENOR DE ROPA (BOUTIQUE)",
+                                "description": "EN ESTA CLASE SE INCLUYE EL COMERCIO DE PRENDAS DE VESTIR (BOUTIQUE)."
+                            },
+                            {
+                                "code": "523203",
+                                "name": "VENTA AL POR MENOR DE CALZADO (ZAPATAERIAS)",
+                                "description": "EN ESTA CLASE SE INCLUYE EL COMERCIO AL POR MENOR DE ZAPATOS (ZAPATERIA)."
+                            },
+                            {
+                                "code": "523204",
+                                "name": "PASAMANERIAS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL COMERCIO AL POR MENOR DE ARTICULOS DE PASAMANERIA."
+                            },
+                            {
+                                "code": "523205",
+                                "name": "VENTA AL POR MENOR DE PRENDAS DE VESTIR, ROPA Y ZAPATOS (TIENDAS)",
+                                "description": "ESTA CLASE INCLUYE LAS PRENDAS DE VESTIR, SUS ACCESORIOS Y CALZADO"
+                            },
+                            {
+                                "code": "523206",
+                                "name": "SERVICIO DE FOTOCOPIADORA",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE FOTOCOPIADO Y EMPASTADO"
+                            },
+                            {
+                                "code": "523207",
+                                "name": "VENTA AL POR MENOR DE ARTICULOS DE CUERO (EXCEPTO CALZADO)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE ARTICULOS DE CUERO, TALABARTE-RIA, Y OTROS MATERIALES SIMILARES O IMITACION DE CUERO. ARTICULOS TALES COMO BOLSOS, BILLETERAS, MALETAS, LLAVEROS, ETC."
+                            },
+                            {
+                                "code": "523208",
+                                "name": "VENTA AL POR MENOR DE PRODUCTOS TEXTILES (TELAS)",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE PRODUCTOS TEXTILES (TELA DE TODA CLASE)"
+                            },
+                            {
+                                "code": "523209",
+                                "name": "VENTA AL POR MENOR DE MATERIALES PARA CALZADO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE TODO TIPO DE MATERIALES TANTO PARA CONFECCION COMO REPARACION DE TODO TIPO DE CALZADO."
+                            },
+                            {
+                                "code": "523301",
+                                "name": "COMERCIO AL POR MENOR DE OBJETOS DE CERAMICA Y PORCELANA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE OBJETOS DE CERAMICA."
+                            },
+                            {
+                                "code": "523302",
+                                "name": "VENTA AL POR MENOR DE CRISTALERIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE OBJETOS DE CRISTAL Y MATERIALES SIMILARES."
+                            },
+                            {
+                                "code": "523303",
+                                "name": "VENTA AL POR MENOR DE DISCOS, CDS Y OTROS SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE DISCOS, CASETTES, CDS Y CUALQUIER OTRO PRODUCTO SIMILAR"
+                            },
+                            {
+                                "code": "523304",
+                                "name": "VENTA AL POR MENOR DE ELECTRODOMESTICOS, MUEBLES Y ARTICULOS PARA EL HOGAR",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE ELECTRODOMESTICOS, MUEBLES Y ARTICULOS VARIOS, TALES COMO ARTEFACTOS DE ILUMINACION,(LAMPARAS, CANDELAS, ETC) DE PLASTICO, ALUMINIO, MADERA Y OTROS. ARTICULOS Y EQUIPO DE USO DOMESTICO NO CLASIFICADOS EN OTRA PARTE(TAL COMO LAS VENTAS POR TELEVISION Y QUE TIENEN LOCALES COMERCIALES). INCLUYASE ADEMAS LA VENTA DE CORTINAS."
+                            },
+                            {
+                                "code": "523306",
+                                "name": "VENTA AL POR MENOR DE ANTIGUEDADES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR O COMERCIO MINORISTA DE ANTIGUEDADES."
+                            },
+                            {
+                                "code": "523308",
+                                "name": "VENTA AL POR MENOR DE INSTRUMENTOS MUSICALES, PARTES Y ACCESORIOS",
+                                "description": "ESTA CLASE INCLUYEN LA VENTA AL POR MENOR DE INSTRUMENTOS MUSICALES. PARTES Y ACCESORIOS."
+                            },
+                            {
+                                "code": "523309",
+                                "name": "VENTA DE CUADROS PINTURAS HECHAS POR PINTORES NACIONALES Y EXTRANJEROS PRODUCIDOS EN EL PAIS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE CUADROS Y PINTURAS HECHAS POR PINTORES NACIONALES Y EXTRANJEROS, EXENTA DE IMPUESTO DE VENTAS ART. 5 DEL REGLAMENTO DE LA LEY DE VENTAS."
+                            },
+                            {
+                                "code": "523401",
+                                "name": "VENTA AL POR MENOR DE DEPOSITO DE MADERA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE TODO TIPO DE MADERAS."
+                            },
+                            {
+                                "code": "523402",
+                                "name": "VENTA AL POR MENOR ARTICULOS DE FERRETERIA PINTURAS MADERA Y MATERIALES PARA LA CONSTRUCCION",
+                                "description": "ESTA CLASE COMPRENDE LAS ACTIVIDADES DE VENTA AL POR MENOR DE ARTICULOS DE FERRETERIA, PINTURAS, BARNICES Y LACAS, MATERIALES DE CONSTRUCCION COMO LADRILLOS, MADERA, EQUIPO SANITARIO, EQUIPO DE BRICOLAJE, SEGADORAS DE CESPED DE CUALQUIER TIPO, SAUNAS ENTRE OTROS"
+                            },
+                            {
+                                "code": "523403",
+                                "name": "VENTA DE PINTURAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE PINTURAS DE TODO TIPO Y USO: DECORATIVAS, ANTICORROSIVAS, LATEX, ACEITE, BARNICES, ESTUCO, LACAS, ETC. ASI COMO PRODUCTOS CONEXOS COMO DILUYENTES."
+                            },
+                            {
+                                "code": "523404",
+                                "name": "VENTA AL POR MENOR DE VIDRIO PARA LA CONSTRUCCION",
+                                "description": "EN ESTA CLASE SE INCLUYE UNICAMENTE LA VENTA AL POR MENOR DE VIDRIO PLANO PARA LA CONSTRUCCION"
+                            },
+                            {
+                                "code": "523405",
+                                "name": "VENTA AL POR MENOR DE MATERIALES PARA LA CONSTRUCCION",
+                                "description": "COMPRENDE LA VENTA DE PRODUCTOS DE FERRETERIA, PINTURAS, BARNICES, LACAS,MADERA, PISOS DE CERAMICA, TERRAZO, ETC. Y EN GENERAL TODO TIPO DE MATERIALES PARA LA CONSTRUCCION."
+                            },
+                            {
+                                "code": "523406",
+                                "name": "VENTA AL POR MENOR DE ARTICULOS ELECTRONICOS, ELECTRICOS Y SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE TODO TIPO DE ACCESORIOS Y ARTICULOS ELECTRONICOS, ELECTRICOS Y SIMILARES."
+                            },
+                            {
+                                "code": "523407",
+                                "name": "VENTA AL POR MENOR DE PLYWOOD",
+                                "description": "SE INCLUYE LA COMERCIALIZACION DE PLYWOOD AL POR MENOR, EXCENTOS DEL IMPUESTO SOBRE LAS VENTAS SEGUN RESOLUCION 01495V DEL 16/03/1995."
+                            },
+                            {
+                                "code": "523501",
+                                "name": "VENTA AL POR MENOR REALIZADA DENTRO DEL DEPOSITO LIBRE COMERCIAL DE GOLFITO.",
+                                "description": "ESTA CLASE INCLUYE EL COMERCIO AL POR MENOR DE TODO TIPO DE PRODUCTOS QUE SE REALICE DENTRO DEL DEPOSITO LIBRE COMERCIAL DE GOLFITO. SOLO ESTA AFECTA A RENTA SEGUN OFICIO DGT-498-2017 DEL 9 DE MAYO DEL 2017."
+                            },
+                            {
+                                "code": "523601",
+                                "name": "COMERCIO AL POR MENOR DE COMPUTADORAS, ACCESORIOS, MICROCOMPONENTES Y PAQUETES DE COMPUTO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL COMERCIO AL POR MENOR DE COMPUTADORAS, MICROCOMPONENTES Y ACCESORIOS DE COMPUTO, ADEMAS PAQUETES DE COMPUTO DISEÑADOS PARA LA COMERCIALIZACION INCLUYENDO LA LICENCIA DE USO."
+                            },
+                            {
+                                "code": "523701",
+                                "name": "LIBRERIAS",
+                                "description": "EN ESTA CLASE SE INCLUYE ARTICULOS DE LIBRERIAS (LAPICEROS, REVISTAS, PAPEL BOND, CARTULINA, CUADERNOS, UTILES DE ESCRITORIO, MATERIALES Y EQUIPO DE OFICINA, ETC)"
+                            },
+                            {
+                                "code": "523702",
+                                "name": "VENTA AL POR MENOR DE REVISTAS/PERIODICOS EN PUESTOS DE VENTAS O MERCADOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE PERIODICOS Y REVISTA EN PUESTOS DE VENTAS, MERCADOS E INCLUSIVE EN LOCALES COMERCIALES"
+                            },
+                            {
+                                "code": "523703",
+                                "name": "VENTA AL POR MENOR DE LIBROS Y TEXTOS EDUCATIVOS INCLUIDOS EN CANASTA BASICA",
+                                "description": "VENTA DE LIBROS Y TEXTOS EDUCATIVOS NO AFECTOS AL IVA"
+                            },
+                            {
+                                "code": "523801",
+                                "name": "VENTA AL POR MENOR DE ARMAS (ARMERIAS)",
+                                "description": "EN ESTA CLASE SE INCLUYE VENTA AL POR MENOR DE ARMAS Y MUNICIONES"
+                            },
+                            {
+                                "code": "523803",
+                                "name": "VENTA AL POR MENOR DE MAQUINARIA Y EQUIPO DE TODO TIPO Y ARTICULOS CONEXOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE MAQUINARIA Y EQUIPO INDUSTRIAL AGROPECUARIO, DE CONSTRUCCION Y DE INGENIERIA CIVIL, MAQUINARIA Y EQUIPO PARA LA INDUSTRIAS TEXTIL, DE LA MADERA, METALURGICA, DE PISCINA, ETC, ASI COMO LA VENTA AL POR MENOR DE ACCESORIOS CONEXOS."
+                            },
+                            {
+                                "code": "523805",
+                                "name": "VENTA AL POR MENOR DE PURIFICADORES DE AGUA, SUS PARTES Y REPUESTOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE PURIFICADORES AGUA, SUS PARTES Y REPUESTOS."
+                            },
+                            {
+                                "code": "523806",
+                                "name": "VENTA AL POR MENOR DE MAQUINARIA INDUSTRIAL USADA",
+                                "description": "INCLUYASE EN ESTA ACTIVIDAD LA VENTA AL POR MENOR DE MAQUINARIA INDUSTRIAL USADA"
+                            },
+                            {
+                                "code": "523807",
+                                "name": "VENTA AL POR MENOR DE REPUESTOS NUEVOS PARA MAQUINARIA, EQUIPO Y OTROS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE REPUESTOS, PARTES, PIEZAS Y ACCESORIOS NUEVOS, PARA MAQUINARIA, EQUIPO Y OTROS."
+                            },
+                            {
+                                "code": "523808",
+                                "name": "VENTA AL POR MENOR DE REPUESTOS USADOS PARA MAQUINARIA, EQUIPO Y OTROS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE REPUESTOS, PARTES, PIEZAS Y ACCESORIOS USADOS, PARA MAQUINARIA, EQUIPO Y OTROS."
+                            },
+                            {
+                                "code": "523901",
+                                "name": "VENTA AL POR MENOR DE OTROS PRODUCTOS EN ALMACENES ESPECIALIZADOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE MERCANCIAS U OTROS ARTICULOS DE DIFERENTE NATURALEZA QUE NO HAN SIDO CONTEMPLADOS EN LOS CODIGOS DE COMERCIO AL POR MENOR, Y QUE SON REALIZADOS EN LOCALES ESPECIALIZADOS."
+                            },
+                            {
+                                "code": "523902",
+                                "name": "VENTA AL POR MENOR DE SUMINISTROS Y/0 EQUIPO DE OFICINA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE MATERIALES Y/O EQUIPO DE OFICINA, ASI COMO ARTICULOS VARIOS DE ESCRITORIO."
+                            },
+                            {
+                                "code": "523903",
+                                "name": "VENTA AL POR MENOR DE FLORES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL COMERCIO AL POR MENOR DEDICADO A LA COMPRA Y VENTA DE FLORES, ARREGLOS, CORONAS Y SIMILARES DE FLORES NATURALES O ARTIFICIALES. SUJETAS A VENTAS EN CONCORDANCIA CON EL ARTICULO 4 DE LA LEY DEL IMPUESTO GENERAL SOBRE LAS VENTAS Y SUS REFORMAS Y EL ARTICULO 5 DE SU REGLAMENTO. TAMBIEN SEGUN DECRETO EJECUTIVO 37132-H DEL 17/5/2012.LAS FLORISTERIAS SE REGISTRAN EN EL CODIGO 523907."
+                            },
+                            {
+                                "code": "523904",
+                                "name": "SERVICIOS DE REPARACION DE JOYERIA Y RELOJERIA EN GENERAL",
+                                "description": "ESTA CLASE INCLUYE LOS SERVICIOS DE REPARACION DE JOYERIA Y RELOJERIA EN GENERAL"
+                            },
+                            {
+                                "code": "523905",
+                                "name": "VENTA AL POR MENOR DE JOYERIA, RELOJERIA Y BISUTERIA",
+                                "description": "VENTA AL CONSUMIDOR FINAL DE LAS JOYAS Y RELOJES EN LOCALES, TIENDAS, ETC. CONTIENE ADEMAS LAS BISUTERIAS (JOYAS DE MATERIALES NO PRECIOSOS)."
+                            },
+                            {
+                                "code": "523906",
+                                "name": "VENTA AL POR MENOR CELULARES ACCESORIOS EQUIPO Y ART PARA COMUNICACIONES INCLUYE LA REPARACION",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA Y LA REPARACION DE EQUIPO Y ARTICULOS PARA COMUNICACION TALES COMO: CENTRALES TELEFONICAS, TELEFONOS FIJOS, TELEFONOS CELULARES Y SUS ACCESORIOS, FAX, REDIOCOMUNICADORES, RADIOLOCALIZADORES, ANTENAS, ETC."
+                            },
+                            {
+                                "code": "523907",
+                                "name": "FLORISTERIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ELABORACION DE ARREGLOS, OFRENDAS FLORALES Y SIMILARES, A PARTIR DE FLORES NATURALES, ARTIFICIALES O DE AMBOS TIPOS. SUJETAS A VENTAS EN CONCORDANCIA CON EL ARTICULO 4 DE LA LEY DEL IMPUESTO GENERAL SOBRE LAS VENTAS Y SUS REFORMAS Y EL ARTICULO 5 DE SU REGLAMENTO. TAMBIEN SEGUN DECRETO EJECUTIVO 37132-H DEL 17/5/2012. EL COMERCIO AL POR MENOR DE FLORES SE REGISTRA EN LA CLASE 523903."
+                            },
+                            {
+                                "code": "523908",
+                                "name": "COMERCIO AL POR MENOR DE ANIMALES DOMESTICOS PARA CONSUMO HUMANO",
+                                "description": "SE REFIERE A LA VENTA AL POR MENOR DE ANIMALES PARA CONSUMO DEL SER HUMANO, POR EJEMPLO, POLLOS, GALLINAS, CERDOS, ENTRE OTROS. LA VENTA DE MASCOTAS SE INCLUYE EN LA ACTIVIDAD 523913"
+                            },
+                            {
+                                "code": "523909",
+                                "name": "VENTA DE PRODUCTOS DE ARTESANIA Y SOUVENIR",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE PRODUCTOS DE ARTESANIA, INCLUYENDO SOUVENIRS Y SIMILARES."
+                            },
+                            {
+                                "code": "523910",
+                                "name": "VENTA AL POR MENOR DE JUGUETES Y/O ARTICULOS DE ESPARCIMIENTO",
+                                "description": "SE REFIERE A LA VENTA AL POR MENOR DE JUGUETES, JUEGOS DE MESA, JUEGOS DIDACTICOS, JUEGOS ELECTRONICOS (EXCEPTO DE CONSOLAS DE VIDEOJUEGOS)"
+                            },
+                            {
+                                "code": "523911",
+                                "name": "VENTA AL POR MENOR DE PAÑALES DESECHABLES, ARTICULOS DE LIMPIEZA Y OTROS (PAÑALERA)",
+                                "description": "SE REFIERE A LA VENTA DE PAÑALES DESECHABLES JUNTO CON OTROS ARTICULOS COMO POR EJEMPLO DE LIMPIEZA, DE TOCADOR, DE FIESTAS ETC. LOS CUALES SI ESTAN AFECTOS AL IMPUESTO SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "523912",
+                                "name": "VENTA AL POR MENOR Y MAYOR DE PRODUCTOS E INSUMOS AGROPECUARIOS",
+                                "description": "SE REFIERE A LA VENTA DE FERTILIZANTES, AGROQUIMICOS, PRODUCTOS VETERINARIOS, IMPLEMENTOS AGRICOLAS, CONCENTRADOS, TODA CLASE DE ALIMENTOS PARA ANIMALES."
+                            },
+                            {
+                                "code": "523913",
+                                "name": "VENTA AL POR MENOR DE ANIMALES DOMESTICOS PARA MASCOTAS.",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE ANIMALES DOMESTICOS PARA MASCOTAS, COMO: PERROS, PERICOS, PECES, GATOS ENTRE OTROS."
+                            },
+                            {
+                                "code": "523915",
+                                "name": "DISTRIBUCION Y VENTA DE GAS EN CILINDRO",
+                                "description": "ESTA CLASE INCLUYE LA DISTRIBUCION Y VENTA DE GAS EN CILINDRO."
+                            },
+                            {
+                                "code": "523916",
+                                "name": "COMERCIO AL POR MENOR DE ALIMENTOS Y PRODUCTOS N.C.P. INCLUIDOS EN CANASTA BASICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE CUALQUIER PRODUCTO, ALIMENTO Y ARTICULO NO CONTEMPLADO DENTRO DE LA SECCION DE VENTA AL POR MENOR DE OTROS PRODUCTOS. NO ESTAN SUJETOS AL IMPUESTO SOBRES LAS VENTAS DE ACUERDO CON EL ART. 2 LEY DEL IMPUESTO SOBRE LA RENTA ART. 1 INC B) DECRETO 25514-H."
+                            },
+                            {
+                                "code": "523917",
+                                "name": "VENTA AL POR MENOR DE BICICLETAS Y SUS ACCESORIOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE TODO TIPO DE BICICLETAS, REPUESTOS Y ACCESORIOS.EXCEPTO REPARACION, LA CUAL SE INCLUYE EN LA CLASE 526003."
+                            },
+                            {
+                                "code": "523918",
+                                "name": "VENTA AL POR MENOR DE EQUIPO DE AUDIO Y VIDEO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE EQUIPO DE AUDIO Y VIDEO PARA TODO TIPO DE USO, COMERCIAL, INDUSTRIAL, DOMESTICO, ENTRE OTROS, SE INCLUYE LA VENTA DE CONSOLAS DE VIDEOS JUEGOS."
+                            },
+                            {
+                                "code": "523919",
+                                "name": "VENTA AL POR MENOR DE ARTICULOS Y ACCESORIOS ORTOPEDICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE TODO TIPO DE PRODUCTOS, ARTICULOS Y ACCESORIOS ORTOPEDICOS."
+                            },
+                            {
+                                "code": "523920",
+                                "name": "VENTA AL POR MENOR DE ANTEOJOS Y ARTICULOS OPTICOS (OPTICA)",
+                                "description": "OPTICAS: SE DEFINE COMO EL COMERCIANTE EN INSTRUMENTOS DE OPTICAS, RELATIVOS A LA VISION. TALES COMO ANTEOJOS DE TODO TIPO, ARTICULOS DE LIMPIEZA, REPUESTOS, AROS, LENTES, LENTES DE CONTACTO, ETC. LOS EXAMENES PARA LA VISTA Y OTROS SERVICIOS RELACIONADOS SE INCLUYEN EN LA CLA SE DE CONSULTA PRIVADA 851204."
+                            },
+                            {
+                                "code": "523921",
+                                "name": "VENTA AL POR MENOR DE CAJAS REGISTRADORAS, CALCULADORAS O MAQUINAS DE CONTABILIDAD",
+                                "description": "ESTA CLASE INCLUYEN LA VENTA AL POR MENOR DE CAJAS REGISTRADORAS, CALCULADORAS Y MAQUINAS DE COONTABILIDAD."
+                            },
+                            {
+                                "code": "523922",
+                                "name": "VENTA AL POR MENOR DE POLEN Y SEMILLAS",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE POLEN PARA USO AGROPECUARIO Y TODO TIPO DE SEMILLAS,LAS CUALES ESTAN EXENTOS DEL IMPUESTO SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "523923",
+                                "name": "VENTA AL POR MENOR DE REPUESTOS PARA ELECTRODOMESTICOS",
+                                "description": "EN ESTA CLASE SE INCLUYEN TODO TIPO DE REPUESTOS PARA ELECTRODOMESTICOS."
+                            },
+                            {
+                                "code": "523925",
+                                "name": "VENTA AL POR MENOR DE EXTINTORES",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL POR MENOR DE EXTINTORES"
+                            },
+                            {
+                                "code": "523926",
+                                "name": "MANTENIMIENTO DE EXTINTORES",
+                                "description": "ESTA CLASE INCLUTE EL MANTENIMIENTO DE APARATOS PARA EXTINGUIR INCENDIOS SEA CONAGUA O CON MEZCLA QUE DIFICULTA LA COMBUSTION."
+                            },
+                            {
+                                "code": "523927",
+                                "name": "REPARACION EQUIPO DE AUDIO Y VIDEO",
+                                "description": "ESTA CLASE INCLUYE LA REPARACION DE EQUIPO DE AUDIO Y VIDEO PARA USO COMERCIAL, DOMESTICO E INDUSTRIAL, (PARLANTES, MICROFONOS, GRABADORAS, EQUIPOS DE SONIDO, ALTA VOCES, CAMARAS DE VIDEO, DVD, TELEVISORES, ETC)."
+                            },
+                            {
+                                "code": "523929",
+                                "name": "VENTA DE PERROS ENTRENADOS PARA SEGURIDAD",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE PERROS ENTRENADOS PARA SEGURIDAD, DETECCION DE DROGAS."
+                            },
+                            {
+                                "code": "523930",
+                                "name": "VENTA AL POR MENOR DE PIEZAS DE BAMBU",
+                                "description": "EN ESTA CLASE SE INCLUYE LA COMPRA Y VENTA DE PIEZAS DE BAMBU."
+                            },
+                            {
+                                "code": "523935",
+                                "name": "VENTA AL POR MENOR DE OTROS PRODUCTOS NUEVOS EN COMERCIOS ESPECIALIZADOS NO INCLUIDOS EN CANASTA BASICA.",
+                                "description": "VENTA AL POR MENOR DE OTROS PRODUCTOS NUEVOS EN COMERCIOS ESPECIALIZADOS NO INCLUIDOS EN CANASTA BASICA."
+                            },
+                            {
+                                "code": "524001",
+                                "name": "VENTA DE TODO TIPO DE ARTICULOS USADOS",
+                                "description": "ESTA CLASE INCLUYE LA VENTA DE TODO TIPO DE ARTICULOS USADOS POR EJEMPLO MUEBLES U OTROS BIENES POR LO QUE PUEDE OPTAR POR EL REGIMEN ESPECIAL DE BIENES USADOS."
+                            },
+                            {
+                                "code": "524002",
+                                "name": "CASA DE EMPEÑO Y AFIN",
+                                "description": "EN ESTA CLASE SE INCLUYE LA PRESTACION DE DINERO A CAMBIO DE BIENES CONSIGNADOS COMO GARANTIA. ASI COMO TAMBIEN LA VENTA DE LOS MISMOS VENCIDO EL PLAZO Y LOS PAGOS ACORDADOS. SOLO PODRAN INSCRIBIRSE LAS PERSONAS FISICAS SEGUN LO ESTABLECE LA LEY PARA GARANTIZAR AL PAIS MAYOR SEGURIDAD Y ORDEN, DEL 17/11/1977, EN SUCARTICULO 19."
+                            },
+                            {
+                                "code": "524004",
+                                "name": "VENTA DE LIBROS USADOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE LIBROS USADOS."
+                            },
+                            {
+                                "code": "524005",
+                                "name": "VENTA DE MONEDAS, BILLETES,ESTAMPILLAS (NUEVAS Y USADAS) PARA COLECCION Y ESPECIES FISCALES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE MONEDAS, BILLETES Y ESTAMPILLAS NUEVAS Y USADAS PARACOLECCION (NIMUSMATICA Y FILATERIA) ASI COMO LAS ESPECIES FISCALES . NO ESTA AFECTA AL IMPUESTO SOBRE LAS VENTAS DE ACUERDO CON LA DEFINICION DE MERCANCIA DEL REGLAMENTO DE LA LEY DEL IMPUESTO SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "524006",
+                                "name": "VENTA AL POR MENOR DE ROPA USADA",
+                                "description": "INCLUYE LA VENTA DE ROPA CUYO IMPUESTO SOBRE EL VALOR AGREGADO SE RECAUDA A NIVEL DE ADUANAS DE CONFORMIDAD CON LA RESOLUCION 356-V PUBLICADA EN LA GACETA 167 DEL 5/9/90 Y EL DECRETO 299950-H PUBLICADO EN LA GACETA 218 DEL 13/11/2001."
+                            },
+                            {
+                                "code": "525101",
+                                "name": "VENTA AL POR MENOR DE TODO TIPO DE ARTICULOS POR CATALOGO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA AL POR MENOR DE CUALQUIER PRODUCTO O MERCANCIAPOR CATALOGO VENTAS PIRAMIDALES, VENTAS MULTINIVEL Y SIMILARES. EN ESTA CASE SE DEBEN INCLUIR UNICAMENTE LOS VENDEDORES O AFILIADOS QUE VENDEN AL CONSUMIDOR FINAL. LOS VENDEDORES MAYORISTAS SE DEBEN INCLUIR EN EL CODIGO 513910."
+                            },
+                            {
+                                "code": "525201",
+                                "name": "VENTA DE REVISTAS/PERIODICOS (PUESTOS CALLEJEROS)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTAS DE REVISTAS Y PERIODICOS EN PUESTOS CALLEJEROS"
+                            },
+                            {
+                                "code": "525301",
+                                "name": "VENTA DE LOTERIA EN AGENCIAS O AL DETALLE",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE LOTERIA EN AGENCIAS AUTORIZADAS Y/O EN PUESTOS"
+                            },
+                            {
+                                "code": "525303",
+                                "name": "EMISION DE LA LOTERIA NACIONAL Y SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EMISION DE LA LOTERIA, CHANCES O TIEMPOS A CARGO DE LA JUNTA DE PROTECCION SOCIAL DE SAN JOSE, AFECTA AL IMPUESTO SOBRE LAS VENTAS A NIVEL DE FABRICA, SEGUN RESOLUCION 23-95 PUBLICADA EN LA GACETA 166 DEL 01-09-1995."
+                            },
+                            {
+                                "code": "525901",
+                                "name": "VENTA DE ALFOMBRAS Y TAPICES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE ALFOMBRAS Y TAPICES."
+                            },
+                            {
+                                "code": "525902",
+                                "name": "VENTA AMBULANTE DE ARTICULOS PARA EL HOGAR",
+                                "description": "ESTA CLASE INCLUYE LA VENTA AL DETALLE O AL CONSUMIDOR FINAL DE PRODUCTOS VARIOSREALIZADA POR COMERCIANTES DE FORMA AMBULANTE (CASA POR CASA)."
+                            },
+                            {
+                                "code": "525903",
+                                "name": "VENTA DE LIBROS A DOMICILIO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE LIBROS A DOMICILIO, EXENTOS DEL IMPUESTO DEVENTAS."
+                            },
+                            {
+                                "code": "525904",
+                                "name": "TRABAJOS DE MANUALIDADES",
+                                "description": "ESTA CLASE INCLUYE LOS TRABAJOS EFECTUADOS CON LAS MANOS, CON O SIN AYUDA DE HERRAMIENTAS."
+                            },
+                            {
+                                "code": "525905",
+                                "name": "VENTA AL POR MENOR DE TARJETAS TELEFONICAS, PINES, TIEMPO AIRE Y SIMILARES",
+                                "description": "INCLUYANSE EN ESTA ACTIVIDAD LOS INTERMEDIARIOS Y DISTRIBUIDORES DE TARJETAS TELEFONICAS, PINES, TIEMPO AIRE Y SIMILARES, QUE OBTIENEN UNA RETRIBUCION O COMISION POR PRESTAR EL SERVICIO EN LA MODALIDAD PREPAGO, COMO A) TARJETAS TELEFONICAS, B) PINES, C) TIEMPO-AIRE Y D) OTROS SIMILARES."
+                            },
+                            {
+                                "code": "526001",
+                                "name": "SERVICIOS DE REPARACION DE ZAPATOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA REPARACION DE ZAPATOS."
+                            },
+                            {
+                                "code": "526002",
+                                "name": "REPARACION DE MUEBLES Y ACCESORIOS DOMESTICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE RETAPIZADO,ACABADO, RESTAURACION Y REPARACION DE MUEBLES Y ACCESORIOS DOMESTICOS, INCLUIDOS MUEBLES DE OFICINA Y MONTAJE DE MUEBLES NO EMPOTRADOSELACIONADA CON LAS ACTIVIDADES DE FABRICACION Y VENTA AL POR MAYOR O AL POR MENOR"
+                            },
+                            {
+                                "code": "526003",
+                                "name": "REPARACION DE BICICLETAS",
+                                "description": "ESTA CLASE INCLUYE UNICAMENTE EL SERVICIO DE REPARACION DE BICICLETAS YA SE EN UN TALLER O A DOMICILIO."
+                            },
+                            {
+                                "code": "526005",
+                                "name": "ELECTRICISTA, SERVICIOS",
+                                "description": "SE REFIERE A LOS SERVICIOS PRESTADOS POR UNA PERSONA ESPECIALIZADA, EN FORMA INDEPENDIENTE, PRINCIPALMENTE INSTALACIONES ELECTRICAS. LA REPARACION DE ESTE CUALQUIER ARTICULO ELECTRICO SE INCLUYE EN LA ACTIVIDAD 526006"
+                            },
+                            {
+                                "code": "526006",
+                                "name": "REPARACION DE ARTICULOS ELECTRICOS",
+                                "description": "SE REFIERE A LA REPARACION DE TODO TIPO DE ARTICULOS ELECTRICOS REALIZADO EN UN TALLER O A DOMICILIO. AFECTO A VENTAS SEGUN OFICIO DGT-087-07 DEL DEL 22-01-2007."
+                            },
+                            {
+                                "code": "526008",
+                                "name": "REPARACION Y MANTENIMIENTO DE PERSIANAS Y CORTINAS",
+                                "description": "ESTA CLASE INCLUYE LA REPARACION Y MANTENIMIENTO DE PERSIANAS, CORTINAS O SUS ACCESORIOS."
+                            },
+                            {
+                                "code": "526010",
+                                "name": "INSTALACION Y MANTENIMIENTO DE PERSIANAS Y CORTINAS",
+                                "description": "ESTA CLASE INCLUYE LA INSTALACION Y MANTENIMIENTO DE PERSIANAS Y CORTINAS INDEPENDIENTEMENTE DEL MATERIAL CON EL QUE SE FABRICARON"
+                            },
+                            {
+                                "code": "526011",
+                                "name": "REPARACION Y MANTENIMIENTO DE EQUIPO PARA TELECOMUNICACIONES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA REPARACIONES DE EQUIPO PARA COMUNICACIONES TALES COMO: CENTRALES TELEFONICAS, TELEFONOS, FAX, RADIOCOMUNICADORES, RADIOLOCALIZADORES, ANTENAS, ETC."
+                            },
+                            {
+                                "code": "526012",
+                                "name": "INSTALACION Y MANTENIMIENTO DE PISCINAS,JACUZZIS Y SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA INSTALACION DE EQUIPO PARA PISCINA, JACUZZI Y SIMILARES. SE INCLUYE TAMBIEN EL MANTENIMIENTO DEL MISMO. (NO CONTEMPLA LA VENTA DEL EQUIPO, ACTIVIDAD 523803)."
+                            },
+                            {
+                                "code": "551001",
+                                "name": "ALQUILER DE BIENES INMUEBLES DE USO HABITACIONAL POR PERIODOS INFERIORES A UN MES (CASAS DE ESTANCIA TRANSITORIA, CASA DE HUESPEDES, CABINAS, CAMPAMENTOS, ENTRE OTROS)",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE INMUEBLES PARA ESTANCIAS TRANSITORIAS POR PERIODOS MENORES A UN MES. LAS PARTES SE OBLIGAN RECIPROCAMENTE, UNA A CONCEDER EL USO Y LA OTRA EL GOCE TEMPORAL DEL INMUEBLE. ADEMAS, SE INCLUYE EL HOSPEDAJE TEMPORAL Y EL ALQUILER DE LUGARES PARA ACAMPAR,TANTO AL PUBLICO EN GENERAL COMO A AFILIADOS A UNA DETERMINADA ORGANIZACION. INCLUYE TAMBIEN EL ALQUILER TURISTICO DE CONDOMINIOS SEGUN OFICIO DGT-812-06 DEL 2 DE JUNIO DEL 2006 . ASI COMO, EL ARTICULO 3 DE LA LEY PARA MEJORAR LA LUCHA CONTRA EL FRAUDE FISCAL."
+                            },
+                            {
+                                "code": "551002",
+                                "name": "HOTEL",
+                                "description": "ESTA CLASE INCLUYE EL SERVICIO DE ALOJAMIENTO A LAS PERSONAS TEMPORALMENTE Y QUE POR LO GENERAL PROVEEN A LOS HUESPEDES SERVICIOS ADICIONALES COMO RESTAURANTES, PISCINAS, GUARDERIAS, SERVICIOS DE CONFERENCIAS, CONVENCIONES Y REUNIONES EN SU ESTABLECIMIENTO."
+                            },
+                            {
+                                "code": "551004",
+                                "name": "MOTEL Y/O SERVICIO DE HABITACION OCASIONAL, ALBERGUES, POSADAS Y SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS ESTABLECIMIENTOS EN LOS QUE SE FACILITA EL ALOJAMIENTO EN HABITACIONES CON ENTRADAS INDEPENDIENTES DESDE EL EXTERIOR, CON O SIN GARAJE, PROXIMOS O CONTIGUOS ADICHA HABITACION. EN COSTA RICA SE FRECUENTAN ESTOS SITIOS PARA CITAS OCASIONALES, CONTEMPLA ALBERGUES Y POSADAS."
+                            },
+                            {
+                                "code": "551005",
+                                "name": "SERVICIO DE SALAS VIP Y PREMIUN EN AEROPUERTOS",
+                                "description": "ESTE TIPO DE ACTIVIDAD CONSISTE EN EL SERVICIO DE SALAS VIP Y PREMIUM, QUE PERMITEN EL USO DE WIFI, ACCESO A PERIODICOS, REVISTAS Y TELEVISION, COMPUTADORAS, INTERNET, ENTRE OTROS. ADEMAS DE PAQUETES DE ALIMENTACION BASICA DE CONSUMO ILIMITADO QUE DEBEN SER CANCELADOS DIRECTAMENTE EN LA SALA POR QUIEN LOS DISFRUTA. DE PRESTARSE ESTOS ULTIMOS SERVICIOS SE DEBE INSCRIBIR LA ACTIVIDAD SECUNDARIA QUE CONTENGA VENTAS."
+                            },
+                            {
+                                "code": "552001",
+                                "name": "BARES, CANTINAS O TABERNAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS ESTABLECIMIENTOS COMERCIALES DONDE SE SIRVEN BEBIDAS ALCOHOLICAS Y NO ALCOHOLICAS Y APERITIVOS, GENERALMENTE PARA SER CONSUMIDOS DE INMEDIATO EN EL MISMO ESTABLECIMIENTO."
+                            },
+                            {
+                                "code": "552002",
+                                "name": "CAFETERIAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS CAFETERIAS."
+                            },
+                            {
+                                "code": "552003",
+                                "name": "SERVICIOS DE CATERING SERVICE",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO PROFESIONAL QUE SE DEDICA PREFERENTEMENTE AL SUMINISTRO DE COMIDA PREPARADA, PERO TAMBIEN PUEDE ABASTECER DE TODO LO NECESARIO PARA ORGANIZAR UN BANQUETE O UNA FIESTA"
+                            },
+                            {
+                                "code": "552004",
+                                "name": "SERVICIO DE RESTAURANTE, CAFETERIAS, SODAS Y OTROS EXPENDIOS DE COMIDA",
+                                "description": "ESTA CLASE COMPRENDE EL SERVICIO DE COMIDAS A LOS CLIENTES, (SERVIDAS EN MESA O TIPO BUFFETE) YA SEA PARA CONSUMIR EN EL LOCAL, O PARA ENTREGAR A DOMICILIO. ESTA CLASE COMPRENDE LAS ACTIVIDADES DE: RESTAURANTES, CAFETERIAS, RESTAURANTES DE COMIDA RAPIDA, REPARTO DE PIZZA A DOMICILIO, RESTAURANTES DE COMIDA PARA LLEVAR, VENDEDORES AMBULANTES DE HELADOS, PUESTOS AMBULANTES DE COMIDA, PREPARACION DE ALIMENTOS EN PUESTOS DE MERCADO."
+                            },
+                            {
+                                "code": "552007",
+                                "name": "OTROS EXPENDIOS DE COMIDAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA O EXPENDIO AL POR MENOR DE COMIDAS NO ESPECIFICADO EN OTRA PARTE, TIPO VENTANA O SIMILAR, TALES COMO VENTA DE CONOS, EMPAREDADOS, GRANIZADOS, PUPUSAS, PIZZAS, TACOS, POLLO FRITO, CHICHARRONES, EMPANADAS,ETC."
+                            },
+                            {
+                                "code": "601001",
+                                "name": "SERVICIO DE TRANSPORTE POR VIA FERREA",
+                                "description": "EN ESTA CLASE SE INCLUYE EL TRANSPORTE DE PASAJEROS Y CARGA POR FERROCARRIL INTERURBANO. TAMBIEN SE INCLUYEN LAS ACTIVIDADES CONEXAS, TALES COMO LAS DE CAMBIO DE VIAS Y DE AGUJAS."
+                            },
+                            {
+                                "code": "602001",
+                                "name": "SERVICIO DE TRANSPORTE DE CARGA POR VIA TERRESTRE",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE TRANSPORTE DE CARGA POR VIA TERRESTRE (CAMINOS Y CARRETERAS). EL TRANSPORTE POR VIA FERREA SE INCLUYE EN EL CODIGO 601001."
+                            },
+                            {
+                                "code": "602002",
+                                "name": "TRANSPORTE DE PRODUCTOS DERIVADOS DEL PETROLEO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE TRANSPORTE EN VEHICULOS ESPECIALIZADOS (TIPO CISTERNA) DE PRODUCTOS DERIVADOS DEL PETROLEO."
+                            },
+                            {
+                                "code": "602101",
+                                "name": "TRANSPORTE REGULAR DE ESTUDIANTES Y EMPLEADOS POR VIA TERRESTRE",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE TRANSPORTE DE ESTUDIANTES ASI COMO EL SERVICIO DE TRANSPORTE DE EMPLEADOS."
+                            },
+                            {
+                                "code": "602102",
+                                "name": "SERVICIO DE TRANSPORTE REGULAR DE PERSONAS POR VIA TERRESTRE",
+                                "description": "ESTA CLASE COMPRENDE EL TRANSPORTE TERRESTRE DE PASAJEROS POR SISTEMAS DE TRANSPORTE URBANOS Y SUBURBANOS, QUE PUEDEN ABARCAR LINEAS DE AUTOBUS, TRANVIA, ETC. EL TRANSPORTE SE REALIZA POR RUTAS ESTABLECIDAS SIGUIENDO NORMALMENTE UN HORARIO FIJO Y ENTRAÑA LA RECOGIDA Y DEPOSICION DE LOS PASAJEROS EN PARADAS FIJAS."
+                            },
+                            {
+                                "code": "602201",
+                                "name": "TRANSPORTE NO REGULAR DE PASAJEROS POR VIA TERRESTRE(EXCURSIONES)",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE TRANSPORTE EN BUSES O MICROBUSES PARA EXCURSIONES."
+                            },
+                            {
+                                "code": "602202",
+                                "name": "SERVICIO DE TAXI",
+                                "description": "EN ESTA CLASE SE INCLUYE EL TRANSPORTE NO REGULAR DE PASAJEROS POR VIA TERRESTRE QUE SE PRESTA POR MEDIO DE UN CONTADOR TAXIMETRO Y QUE SE ENCUENTRA REGULADA POR EL MOPT"
+                            },
+                            {
+                                "code": "602203",
+                                "name": "SERVICIO ESPECIAL ESTABLE DE TAXI",
+                                "description": "ESTA CLASE INCLUYE EL SERVICIO PUBLICO DE TRANSPORTE REMUNERADO DE PERSONAS DIRIGIDO A UN GRUPO CERRADO DE PERSONAS USUARIAS Y QUE SATISFACE UNA DEMANDA LIMITADA, RESIDUAL, EXCLUSIVA Y ESTABLE. (PORTEADORES)"
+                            },
+                            {
+                                "code": "602301",
+                                "name": "SERVICIO DE ACARREO Y DISTRIBUCION DE TODO TIPO DE MERCANCIA (INCLUYE LA MUDANZA NACIONAL)",
+                                "description": "EN ESTA CLASE, QUE ABARCA TODOS LOS TIPOS DE TRANSPORTE REGULAR Y NO REGULAR DE CARGA POR CARRETERA, SE INCLUYE EL TRANSPORTE EN CAMION DE UNA GRAN VARIEDAD DE MERCANCIAS, COMO TRONCOS, GANADO, PRODUCTOS REFRIGERADOS, CARGA PESADA, CARGA A GRANEL, MUEBLES DE MUDANZAS, ETC. TAMBIEN SE INCLUYEN EL TRANSPORTE DE CARGA EN VEHICULOS DE TRACCION HUMANA Y ANIMAL (AQUELLOS IMPULSADOS POR EL HOMBRE Y/O ANIMAL, EJE; BICICLETA Y CARRETA) Y EL ALQUILER DE CAMIONES CON CONDUCTOR U OPERARIO. PARA EL ACARREO Y LA DISTRIBUCION EXCLUSIVA DE TODO TIPO DE PRODUCTOS PRESTADOS A EMPRESAS COMERCIALIZADORAS DE PRODUCTOS."
+                            },
+                            {
+                                "code": "602302",
+                                "name": "SERVICIOS DE GRUA",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE TRASLADO DE CUALQUIER TIPO DE AUTOMOVIL O MOTOCICLETA POR MEDIO DE GRUAS O PLATAFORMAS."
+                            },
+                            {
+                                "code": "602304",
+                                "name": "SERVICIO DE MUDANZA INTERNACIONAL",
+                                "description": "ESTA CLASE INCLUYE EL SERVICIO PRESTADO POR PERSONAS FISICAS O JURIDICAS PARA TRASLADAR MENAJE DE CASA O EFECTOS PERSONALES DEL PAIS HACIA EL EXTERIOR O VICEVERSA. LA MUDANZA NACIONAL SE INCLUYE EN LA ACTIVIDAD 602301."
+                            },
+                            {
+                                "code": "603001",
+                                "name": "SERVICIO DE TRANSPORTE POR TUBERIAS",
+                                "description": "ESTA CLASE COMPRENDE EL TRANSPORTE POR TUBERIAS DE GASES, LIQUIDOS, LECHADAS Y OTROS PRODUCTOS. SE INCLUYEN EL FUNCIONAMIENTO DE LAS ESTACIONES DE BOMBEO Y LA CONSERVACION DE LAS TUBERIAS."
+                            },
+                            {
+                                "code": "611001",
+                                "name": "TRANSPORTE DE CARGA POR VIA ACUATICA",
+                                "description": "ESTA CLASE INCLUYE EL TRANSPORTE REGULAR Y NO REGULAR DE CARGA POR VIA ACUATICA. EJEMPLOS:TRANSPORTE MARITIMO Y DE CABOTAJE, VIA LACUSTRE O RELATIVO A LAGOS ASI COMO TRANSPORTE DEPASAJEROS Y CARGA POR RIOS, CANALES Y OTRAS VIAS DE NAVEGACION INTERIORES, COMO RADAS Y PUERTOS."
+                            },
+                            {
+                                "code": "621001",
+                                "name": "SERVICIO DE TRANSPORTE DE CARGA POR VIA AEREA",
+                                "description": "ESTA CLASE ABARCA TODO TIPO DE TRANSPORTE URGENTE O NO DE MERCANCIAS VIA AEREA. (INCLUYE SU RECIBO Y ENVIO)."
+                            },
+                            {
+                                "code": "621002",
+                                "name": "SERVICIO DE TRANSPORTE AEREO REGULADO DE PASAJEROS (LINEAS AEREAS)",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIO PRESTADOS POR LAS LINEAS AEREAS"
+                            },
+                            {
+                                "code": "621003",
+                                "name": "SERVICIO DE PILOTAJE",
+                                "description": "ESTA CLASE COMPRENDE LAS PERSONAS ESPECIALIZADAS EN LA CONDUCCION DE NAVIOS DE SUPERFICIE O AEREOS (PILOTOS) QUE BRINDAN EL SERVICIO DE PILOTAJE."
+                            },
+                            {
+                                "code": "622001",
+                                "name": "SERVICIO DE TRANSPORTE AEREO NO REGULAR DE PASAJEROS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL TRANSPORTE DE PASAJEROS BRINDADO DE FORMA INDEPEN- DIENTE A LINEAS AEREAS."
+                            },
+                            {
+                                "code": "630001",
+                                "name": "PRESTACION DE SERVICIOS DE TRANSITO AEREO",
+                                "description": "INCLUYASE LA PRESTACION DE LOS SERVICIOS DE TRANSITO AEREO, DE TELECOMUNICACIONES AERONAUTICAS Y DE RADIOAYUDAS PARA LA NAVEGACION AEREA. ASI COMO ACTIVIDADES DE CONTROL DE TRAFICO Y NAVEGACION."
+                            },
+                            {
+                                "code": "630101",
+                                "name": "SERVICIO DE CONSOLIDACION DE CARGA Y DESCARGA",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE CARGA, DESCARGA Y ENVIO EN GENERAL DE EQUIPO, MATERIALES Y/O MERCANCIAS, VIA TERRESTRE, MARITIMO O AEREO, DE LA DISTRIBUCION Y TRANSPORTE DE MERCANCIAS DE ECONOMIAS DE ESCALA EN LOGISTICA NACIONAL E INTERNACIONAL."
+                            },
+                            {
+                                "code": "630201",
+                                "name": "SERVICIOS DE ALMACENAJE",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE ALMACENAJE EN GENERAL INDEPENDIENTEMENTE DEL PRODUCTO."
+                            },
+                            {
+                                "code": "630301",
+                                "name": "PARQUEOS/ESTACIONAMIENTO DE VEHICULOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS PARQUEOS O LUGARES ADECUADOS PARA EL ESTACIONAMIENTO DE VEHICULOS."
+                            },
+                            {
+                                "code": "630302",
+                                "name": "FUNCIONAMIENTO DE INSTALACIONES TERMINALES COMO PUERTOS, MUELLES Y AEROPUERTOS",
+                                "description": "ESTA CLASE INCLUYE EL FUNCIONAMIENTO DE INSTALACIONES TERMINALES, COMO ESTACIONES FERROVIARIAS, PUERTOS, MUELLES, AEROPUERTOS,ETC."
+                            },
+                            {
+                                "code": "630303",
+                                "name": "PERMISO DE PASO POR PROPIEDADES PRIVADAS (PEAJE)",
+                                "description": "ESTA ACTIVIDAD INCLUYE EL COBRO DE UNA TARIFA A PARTICULARES, PARA HACER USO DE CAMINOS PRIVADOS COMO PASO A OTRAS PROPIEDADES CERCANAS."
+                            },
+                            {
+                                "code": "630401",
+                                "name": "AGENCIAS DE VIAJES Y EXCURSIONES",
+                                "description": "ESTA CLASE COMPRENDE LAS ACTIVIDADES DE AGENCIAS DEDICADAS PRINCIPALMENTE A VENDER SERVICIOS DE VIAJES, DE VIAJES ORGANIZADOS, DE TRANSPORTE Y DE ALOJAMIENTO AL PUBLICO EN GENERAL Y A CLIENTES COMERCIALES"
+                            },
+                            {
+                                "code": "630403",
+                                "name": "ACTIVIDADES DE OPERADORES TURISTICOS(GUIA DE TURISMO)",
+                                "description": "ESTA ACTIVIDAD COMPRENDE LA ORGANIZACION DE PAQUETES DE SERVICIOS DE VIAJES PARA SU VENTA A TRAVES DE AGENCIAS DE VIAJES O POR LOS PROPIOS OPERADORES TURISTICOS. ESOS VIAJES ORGANIZADOS PUEDEN INCLUIR UNO O VARIOS DE LOS ELEMENTOS SIGUIENTES: TRANSPORTE, ALOJAMIENTO, COMIDAS, VISITAS A MUSEOS, LUGARES HISTORICOS O CULTURALES Y ASISTENCIA A ESPECTACULOS TEATRALES, MUSICALES O DEPORTIVOS"
+                            },
+                            {
+                                "code": "630405",
+                                "name": "EXPLOTACION DE ACTIVIDADES TURISTICAS(CUYA PRES TACION NO SEA REALIZADA POR UN CENTRO DE RECREO)",
+                                "description": "COMPRENDE LA ORGANIZACION Y EXPLOTACION DE ACTIVIDADES TURISTICAS TALES COMO, CANOPY TOURS, BUNGEE, TOURS ACUATICOS, BUCEO CON TANQUE, BUCEO SOLO CON MASCARILLA(SNORKLE) RAPIDOS (RAFTING), TELEFERICO, CAYAK, TOURS EN CUADRACICLOS, CANYONING (RAPPEL EN CATARATA), ESCALADA EN ROCA, ENTRE OTROS,SIEMPRE QUE LA PRESTACION DEL SERVICIO NO SEA REALIZADA POR UN CENTRO DE RECREO, LO ANTERIOR DE CONFORMIDAD CON EL OFICIO DTI-85-2016 DEL 24 DE OCTUBRE DEL 2016."
+                            },
+                            {
+                                "code": "630901",
+                                "name": "AGENCIAS ADUANALES, ALMACENES FISCALES Y ESTACIONAMIENTOS TRANSITORIOS",
+                                "description": "EN ESTA CLASE SE INCLUYEN ALMACENES FISCALES Y ESTACIONAMIENTOS TRANSITORIO (ALMACENAMIENTO POR PERIODOS INDEFINIDOS Y DE FORMA TRANSITORIA SEGUN ART.145 LEY GRAL ADUANAS.)"
+                            },
+                            {
+                                "code": "630903",
+                                "name": "AGENCIA DE TRANSPORTE (NAVIERA)",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS POR AGENCIAS DE TRANSPORTE, INCLUYENDO LA RECEPCION Y ACEPTACION DE LA CARGA, LA PREPARACION DE LOS DOCUMENTOS DE TRANSPORTE, LA AGRUPACION Y EL FRACCIONAMIENTO DE LA CARGA, CONTRATACION DE FLETES. LOS SERVICIOS DE AGENCIAS ADUANALES SE INCLUYEN EN LA ACTIVIDAD 630901Y LOS ALMACENES FISCALES EN LA 630902."
+                            },
+                            {
+                                "code": "630904",
+                                "name": "AGENTE ADUANERO FISICO O JURIDICO",
+                                "description": "ESTA CLASE INCLUYE A LOS AGENTES ADUANEROS QUIENES SON PROFESIONALES AUXILIARES DE LA FUNCION PUBLICA ADUANERA, AUTORIZADOS POR EL MINISTERIO DE HACIENDA PARA ACTUAR, EN SU CARACTER DE PERSONA NATURAL, CON LAS CONDICIONES Y REQUISITOS ESTABLECIDOS EN EL CODIGO ADUANERO UNIFORME CENTROAMERICANO Y LA LEY GENERAL DE ADUANAS, NO. 7557, EN LA PRESTACION HABITUAL DE SERVICIOS A TERCEROS, EN LOS TRAMITES, REGIMENES Y LAS OPERACIONES ADUANERAS. OBLIGADOS EN EL IMPUESTO SOBRE LAS VENTAS CONFORME A OFICIO 1719 DEL 28/10/2005 DE LA DIRECCION GENERAL DE TRIBUTACION"
+                            },
+                            {
+                                "code": "641101",
+                                "name": "ACTIVIDADES POSTALES Y DE CORREO",
+                                "description": "ESTA ACTIVIDAD INCLUYE LA RECOLECCION, CLASIFICACION, TRANSPORFTE Y ENTREGA (NACIONAL O INTERNACIONAL) DE CORRESPONDENCIA ORDINARIA Y PAQUETES POR SERVICIOS POSTALES. LA ACTIVIDAD PUEDE REALIZARSE EN UNO O VARIOS MEDIOS DE TRANSPORTE PROPIOS (TRANSPORTE PRIVADO) O TRANSPORTE PUBLICO. RECOLECCION DE CORRESPONDENCIA Y PAQUETES DEPOSITADOS EN BUZONES PUBLICOS O EN OFICINAS DE CORREOS. DISTRIBUCION Y ENTREGA DE CORRESPONDENCIA Y PAQUETES.ALQUILER DE BUZONES Y SERVICIOS DE APARTADO POSTAL."
+                            },
+                            {
+                                "code": "642001",
+                                "name": "SERVICIOS DE RADIO-MENSAJES, RADIOLOCALIZADORES Y SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ESTACIONES QUE BRINDAN EL SERVICIO DE RADIO MENSAJE, RADIOLOCALIZADORES U OTROS SIMILARES"
+                            },
+                            {
+                                "code": "642002",
+                                "name": "SERVICIO DE TELEVISION POR CABLE, SATELITE U OTROS SISTEMA S SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE TELEVISION TRANSMITIDO POR MEDIO DE CABLE, SATELITE U OTROS SISTEMAS SIMILARES, TALES COMO LOS QUE OFRECE AMNET, CABLETICA, SKY, CABLE VISION, ENTRE OTROS."
+                            },
+                            {
+                                "code": "642003",
+                                "name": "MANTENIMIENTO DE REDES DE TELECOMUNICACION",
+                                "description": "SE INCLUYE EL MANTENIMIENTO DE LAS REDES DE TELECOMUNICACION"
+                            },
+                            {
+                                "code": "642004",
+                                "name": "SERVICIO DE RADIO FRECUENCIA",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO BRINDADO POR OPERADORES DE RADIO FRECUENCIA LOS CUALES RECIBEN Y TRANSMITEN INFORMACION A RECEPTORES QUE EJECUTAN LA SOLICITUD."
+                            },
+                            {
+                                "code": "642005",
+                                "name": "SERVICIOS TELEFONICOS, TELEGRAFICOS Y POR TELEX",
+                                "description": "SE INCLUYEN LAS COMUNICACIONES TELEFONICAS, TELEGRAFICAS, POR TELEX, INCLUSO POR MEDIO DE INTERNET.SE INCLUYE ADEMAS LOS SERVICIOS TELEFONICOS EN LA MODALIDAD DE PREPAGO, COMERCIALIZADOS POR OPERADORES O EMISORES DE A) TARJETAS TELEFONI- CAS B) PINES C) TIEMPO-AIRE D) OTROS SIMILARES."
+                            },
+                            {
+                                "code": "642007",
+                                "name": "VENTA DE ESPACIO EN EL CABLE SUBMARINO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DEL ESPACIO DEL CABLE SUBMARINO PARA EL SUMINISTRO DE TELECOMUNICACIONES DEL ICE Y RACSA A SUS USUARIOS, PRINCIPALMENTE INTERNET. SUJETO A IMPUESTO DE VENTAS OF. DGT-6608-2008"
+                            },
+                            {
+                                "code": "642008",
+                                "name": "SERVICIO DE TRANSMISION DE DATOS, TEXTO, SONIDO, VOZ Y VIDEO POR MEDIO DE LA RED DE INTERNET",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS SERVICIOS DE CORREO ELECTRONICO, BOLETINES, MENSAJERIA DE TEXTO (SMS), VENTA DE ESPACIO EN LA RED, ENTRE OTROS, UTILIZANDO UNA INFRAESTRUCTURA DE TELECOMUNICACIONES (INCLUYE LAS INALAMBRICAS)."
+                            },
+                            {
+                                "code": "642009",
+                                "name": "SERVICIOS DIGITALES O DE TELECOMUNICACIONES E INTANGIBLES PRESTADOS DESDE EL EXTERIOR.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA VENTA DE SERVICIOS DIGITALES O DE TELECOMUNICACIONES, ASI COMO DE BIENES INTANGIBLE, REALIZADOS POR MEDIO DE INTERNET O CUALQUIER OTRA PLATAFORMA DIGITAL Y COMERCIALIZADA A TRAVES DE UNA ENTIDAD PUBLICA O PRIVADA, A PARTIR DE UNA CUENTA BANCARIA QUE FACILITE EL PAGO A LA CUENTA DE UN VENDEDOR O PROVEEDOR, DOMICILIADO EN EL TERRITORIO DE LA REPUBLICA. ARTICULO 30 LEY 9635."
+                            },
+                            {
+                                "code": "651101",
+                                "name": "BANCA CENTRAL",
+                                "description": "EN ESTA CLASE SE INCLUYEN LA RECEPCION DE DEPOSITOS PARA OPERACIONES DE COMPENSACION ENTRE INSTITUCIONES FINANCIERAS, LA SUPERVISION DE LAS OPERACIONES BANCARIAS Y, POSIBLEMENTE, EL MANTENIMIENTO DE LAS RESERVAS NACIONALES DE DIVISAS Y LA EMISION Y ADMINISTRACION DE LA MONEDA NACIONAL, ASI COMO LA FUNCION DE BANCO DEL GOBIERNO. LAS ACTIVIDADES DE LOS BANCOS CENTRALES PUEDEN VARIAR POR RAZONES INSTITUCIONALES."
+                            },
+                            {
+                                "code": "651901",
+                                "name": "COOPERATIVAS DE AHORRO Y CREDITO",
+                                "description": "EN ESTA CLASE SE INCLUYE UNICAMENTE LAS COOPERATIVAS DE AHORRO Y CREDITO"
+                            },
+                            {
+                                "code": "651903",
+                                "name": "BANCOS ESTATALES (EXCEPTO EL BANCO CENTRAL)",
+                                "description": "ESTA CLASE ABARCA LA INTERMEDIACION MONETARIA REALIZADA POR LOS BANCOS ESTATALES. SE EXCLUYE LA BANCA CENTRAL."
+                            },
+                            {
+                                "code": "651904",
+                                "name": "ENTIDADES FINANCIERAS PRIVADAS (BANCOS)",
+                                "description": "ESTA CLASE ABARCA LA INTERMEDIACION MONETARIA REALIZADA POR LA BANCA COMERCIAL PRIVADA"
+                            },
+                            {
+                                "code": "651905",
+                                "name": "SERVICIO DE ENVIO Y RECIBO DE DINERO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO BRINDADO POR EMPRESAS A CAMBIO DE UNA COMISION PARA EL ENVIO Y RECIBO DE DINERO DENTRO Y FUERA DEL PAIS. EMPRESAS DISTINTAS A BANCOS ESTALES, COMERCIALES, BANCOS DE DESCUENTO, CAJAS DE AHORRO O SIMILARES"
+                            },
+                            {
+                                "code": "651906",
+                                "name": "INSTITUCIONES DE AHORRO Y CREDITO PARA VIVIENDA",
+                                "description": "ESTA CLASE INCLUYE LAS INSTITUCIONES ESPECIALIZADAS DE CONCESION DE CREDITO PARA LA COMPRA DE VIVIENDA QUE RECIBEN DEPOSITOS."
+                            },
+                            {
+                                "code": "659101",
+                                "name": "ARRENDAMIENTO OPERATIVO EN FUNCION FINANCIERA CON OPCION DECOMPRA O RENOVACION (LEASING OPERATIVO)",
+                                "description": "SE CONSIDERARA PARA EFECTOS TRIBUTARIOS, DENTRO DE LA CATEGORIA DE CONTRATOS DE ARRENDAMIENTO OPERATIVO, AQUELLOS EN LOS QUE LOS ARRENDANTES SON ENTIDADES FINANCIERAS O EMPRESAS DEDICADAS HABITUALEMENTE AL NEGOCIO DE ARRENDAMIENTO DE ACTIVOS CON OPCION DE COMPRA O RENOVACION. AFECTO AL IMPUESTO SOBRE LAS VENTAS SEG UN DECRETO N° 32876-H DEL DEL 09 DE FEBRERO DE 2006 GACETA 29."
+                            },
+                            {
+                                "code": "659201",
+                                "name": "ENTIDADES FINANCIERAS DISTINTAS AL SISTEMA BANCARIO NACIONAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA INTERMEDIACION FINANCIERA REALIZADA POR INSTITUCIONES QUE NO PRACTICAN LA INTERMEDIACION MONETARIA Y CUYA FUNCION PRINCIPAL ES CONCEDER PRESTAMOS. SE INCLUYEN EL OTORGAMIENTO DE CREDITO A LOS CONSUMIDORES, LA FINANCIACION A LARGO PLAZO PARA EL SECTOR INDUSTRIAL. EN ESTA CLASE SE INCLUYE ELOTORGAMIENTO DE CREDITO PARA LA ADQUISICION DE VIVIENDA POR INSTITUCIONESESPECIALIZADAS QUE NO RECIBEN DEPOSITOS."
+                            },
+                            {
+                                "code": "659202",
+                                "name": "EMISORAS Y PROCESADORAS DE TARJETAS DE CREDITO",
+                                "description": "ESTA CLASE INCLUYE EL SERVICIO DE TARJETAS DE CREDITO, ES DECIR LA CONFECCION, OTORGAMIENTO Y SOPORTE EN SOFTWARE AL ADQUIRENTE, DE UNA LINEA DE CREDITO A UN PLAZO, TASA Y CONDICIONES DETERMINADAS BAJO UN CONTRATO ENTRE EL CLIENTE Y EL EMISOR DE LA TARJETA"
+                            },
+                            {
+                                "code": "659901",
+                                "name": "SERVICIO DE PRESTAMO (PRESTAMISTAS)",
+                                "description": "ESTA CLASE INCLUYE A PERSONAS FISICAS O JURIDICAS QUE PRESTA UNA CANTIDAD DE DINERO A DEVOLVER EN UN PLAZO DETERMINADO, Y RECIBE A PARTE DEL DINERO PRESTADO UNA RETRIBUCION CONOCIDA COMO INTERESES.:"
+                            },
+                            {
+                                "code": "659903",
+                                "name": "SOCIEDADES DE INVERSION MOBILIARIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS INVERSIONES EN VALORES MOBILIARIOS, COMO POR EJEM-PLO ACCIONES, OBLIGACIONES, TITULOS, LOTES DE VALORES MOBILIARIOS DE SOCIEDADESO FONDOS COMUNES DE INVERSION, ETC."
+                            },
+                            {
+                                "code": "659904",
+                                "name": "SERVICIO RECUPERACION DE DEUDAS (FACTORE0)",
+                                "description": "ESTA CLASE SE REFIERE A LAS EMPRESAS O COMPAÑIAS QUE COMPRAN CUENTAS POR COBRAR CON EL OBJETIVO DE RECUPERAR LA DEUDA."
+                            },
+                            {
+                                "code": "659905",
+                                "name": "FONDOS DE INVERSION",
+                                "description": "INCLUYASE EN ESTA ACTIVIDAD LAS FIGURAS JURIDICAS DE FONDOS DE INVERSION QUE OBTIENEN RENDIMIENTOS PROVENIENTES DE TITULOS VALORES U OTROS ACTIVOS. ASI COMO GANANCIAS DE CAPITAL GENERADAS POR ENAJENACION DE ACTIVOS(ALQUILER DE BIENES INMUEBLES)."
+                            },
+                            {
+                                "code": "659906",
+                                "name": "ACTIVIDADES DE SOCIEDADES DE CARTERA (HOLDING)",
+                                "description": "ESTA CLASE INCLUYE LAS ACTIVIDADES REALIZADAS POR SOCIEDADES DE CARTERA, CONOCIDAS COMO HOLDING"
+                            },
+                            {
+                                "code": "659907",
+                                "name": "INGRESOS POR INTERESES DIFERENTES AL COMERCIO DEL PRESTAMO",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS INGRESOS POR INTERESES RECIBIDOS POR FINANCIAMIENTO DE SALDOS, NO CONTEMPLA LOS INTERESES POR PRESTAMOS DE PARTICULARES NI POR ENTIDADES FINANCIERAS DE NINGUN TIPO."
+                            },
+                            {
+                                "code": "659908",
+                                "name": "FONDOS DE LA LEY DEL SISTEMA DE BANCA PARA EL DESARROLLO",
+                                "description": "INCLUYASE EN ESTA ACTIVIDAD LOS FONDOS QUE SEGUN LA LEY 9274 \"REFORMA INTEGRAL DE LA LEY 8634, LEY SISTEMA DE BANCA PARA EL DESARROLLO Y REFORMA DE OTRAS LEYES\"; ESTAN EXENTOS DE TODO TRIBUTO A SABER: LOS FONDOS DE CREDITO PARA EL DESARROLLO (FDC) Y LOS FONDOS DE FINANCIAMIENTO PARA EL DESARROLLO (FOFIDE).DICHOS FONDOS ESTAN REGULADOS POR LA RESOLUCION DGT-R-10-2015 DEL 17/04/15, EN LA CUAL SESE ESTABLECE EL PROCEDIMIENTO PARA LA CORRECTA APLICACION DE LAS EXENCIONES DEL DEL PAGO DEL IMPUESTO SOBRE LA RENTA, ART. 23 INCISO C) DE LA LEY DEL IMPUESTO SOBRE LA RENTA."
+                            },
+                            {
+                                "code": "659909",
+                                "name": "FIDEICOMISOS DE LA LEY DEL SISTEMA DE BANCA PARA EL DESARROLLO",
+                                "description": "INCLUYASE EN ESTA ACTIVIDAD LOS FIDEICOMISOS QUE SEGUN LA LEY 8634 DEL 23 DE ABRIL DEL 2008 SE ESTABLECE LA CREACION DEL FINADE EL CUAL ONSTITUYE UN PATRIMONIO AUTONOMO ADMINISTRADO POR EL BANCO PUBLICO QUE SE DEFINA. LOS MISMOS DEBERAN REGISTRARSE COMO DECLARANTES DEL IMPUESTO SOBRE LA RENTA CON FUNDAMENTO EN LA RESOLUCION DGT-R-21-2014. ADEMAS, LOS MISMOS ESTAN REGULADOS POR LA RESOLUCION DGT-R -10-2015 DEL 17/04/15, EN LA CUAL SE ESTABLECE EL PROCEDIMIENTO PARA LA CORRECTAAPLICACION DE LAS EXENCIONES DEL PAGO DEL IMPUESTO SOBRE LA RENTA, ART. 23 INCISO C) DE LA LEY DEL IMPUESTO SOBRE LA RENTA. AL RESPECTO, LA DIRECCION TECNICA TRIBUTARIA EMITE EL OFICIO DTI-065-2016."
+                            },
+                            {
+                                "code": "660101",
+                                "name": "SEGUROS DE VIDA",
+                                "description": "EN ESTA CLASE SE INCLUYEN LA CONCERTACION DE CONTRATOS DE ANUALIDADES Y POLIZAS DE SEGUROS DE VIDA(INCLUSO EL REASEGURO), SEGUROS DE INVALIDEZ Y SEGUROS DE DOBLE INDEMNIZACION, CONTENGAN O NO UN ELEMENTO IMPORTANTE DE AHORRO, MEDIANTE LOS CUALES SE CAPTAN E INVIERTEN FONDOS."
+                            },
+                            {
+                                "code": "660201",
+                                "name": "OPERADORAS DE PENSIONES",
+                                "description": "ESTA CLASE INCLUYE LAS OPERADORAS DE PENSIONES. ABARCA PLANES DE PENSIONES CON PRESTACIONES DEFINIDAS Y PLANES INDIVIDUALES EN LOS QUE LAS PRESTACIONES DEPENDEN DE LAS CONTRIBUCIONES DEL AFILIADO."
+                            },
+                            {
+                                "code": "660202",
+                                "name": "FONDOS DE OPERADORAS DE PENSIONES EXENTOS DEL 8%",
+                                "description": "INCLUYASE EN ESTA ACTIVIDAD TODOS AQUELLOS OBLIGADOS TRIBUTARIOS QUE SEGUN EL ARTICULO 72 DE LA LEY DE PROTECCION AL TRABAJADOR, ESTAN EXENTOS DE LOS IMPUESTOS REFERIDOS EN EL ART. 18 Y EN EL INCISO C) DEL ARTICULO 23 DE LA LEY DEL IMPUESTO SOBRE LA RENTA, LOS INTERESES, LOS DIVIDENDOS, LAS GANANCIAS DE CAPITAL YCUALQUIER OTRO BENEFICIO QUE PRODUZCAN LOS VALORES EN MONEDA NACIONAL O EN MONEDA EXTRANJERA, EN LOS CUALES LAS ENTIDADES AUTORIZADAS INVIERTAN LOS RECURSOS DELOS FONDOS QUE ADMINISTREN."
+                            },
+                            {
+                                "code": "660301",
+                                "name": "AGENTES DE SEGUROS",
+                                "description": "EN ESTA CLASE SE INCLUYEN UNICAMENTE LOS SERVICIOS DE LOS AGENTES DE SEGUROS"
+                            },
+                            {
+                                "code": "660302",
+                                "name": "COMERCIALIZADORES DE SEGUROS",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS AGENCIAS COMERCIALIZADORAS DE SEGUROS"
+                            },
+                            {
+                                "code": "660303",
+                                "name": "PLANES DE SEGUROS GENERALES",
+                                "description": "ESTA CLASE INCLUYE LOS PLANES DE SEGURO DISTINTOS A LOS SEGUROS DE VIDA, LOS CUALES PUEDEN SER: CONTRA ACCIDENTES Y CONTRA INCENDIOS, SEGURO MEDICO, SEGURO DE COSAS Y AUTOMOVILES, SEGURO MARIIIMO Y AERONAUTICO, SEGURO DE TRANSPORTE, SEGURO CONTRA PERDIDAS PECUNIARIAS Y SEGURO DE RESPONSABILIDADCIVIL. LOS SEGUROS PERSONALES, LOS RIEGOS DE TRABAJO, LAS COSECHAS Y LAS VIVIENDAS DE INTERES SOCIAL SON SEGUROS NO GRAVADOS CON EL IMPUESTO DE VENTAS."
+                            },
+                            {
+                                "code": "671101",
+                                "name": "ADMINISTRACION DE MERCADOS FINANCIEROS",
+                                "description": "ESTA CLASE ABARCA LA ADMINISTRACION Y SUPERVISION DE MERCADOS FINANCIEROS PORENTIDADES DISTINTAS DE LAS AUTORIDADES PUBLICAS COMO: BOLSAS DE VALORES. MERCADOS BURSATILES, BOLSAS DE CONTRATOS DE PRODUCTOS BASICOS, BOLSAS DE FUTUROS, BOLSAS DE OPCIONES SOBRE ACCIONES. (ABARCA LOS BANCOS ESTATALES)"
+                            },
+                            {
+                                "code": "671201",
+                                "name": "CORREDORES DE BOLSA",
+                                "description": "ESTA CLASE INCLUYE A AQUELLAS PERSONAS QUE PREVIO ENCARGO TIENEN AUTORIZACION PARA ASESORAR O REALIZAR DIRECTAMENTE INVERSIONES O TRANSACCIONES DE VALORES EN EL MERCADO FINANCIERO"
+                            },
+                            {
+                                "code": "671202",
+                                "name": "PUESTOS DE BOLSA",
+                                "description": "ESTA CLASE INCLUYE LA REALIZACION DE OPERACIONES EN LOS MERCADOS FINANCIEROS POR CUENTA AJENA Y ACTVIDADES CONEXAS"
+                            },
+                            {
+                                "code": "671901",
+                                "name": "PUESTOS Y/O CASAS DE CAMBIO DE MONEDA EXTRANJERA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS PUESTOS Y/O CASAS DE CAMBIO DE MONEDA EXTRANJERA, PUEDEN EJERCER ESTA ACTIVIDAD LOS BANCOS, FINANCIERAS, COOPERATIVAS, PUESTOS DE BOLSA, EMPRESAS Y PERSONAS QUE COMPRAN Y VENDEN LA MONEDA EXTRANJERA, POR VIA ELECTRONICA O VENTANILLA EN EL MERCADO MAYORISTA O MINORISTA, A CAMBIO DE ELLO RECIBEN UNA COMISION."
+                            },
+                            {
+                                "code": "671902",
+                                "name": "ASESORES FINANCIEROS Y ACTIVIDADES AUXILIARES DE LA INTERMEDICIACION FINANCIERA",
+                                "description": "ESTA CLASE COMPRENDE LAS SIGUIENTES ACTIVIDADES AUXILIARES DE LAS ACTIVIDADES DE SERVICIOS FINANCIEROS, COMO: ACTIVIDADES DE TRAMITACION Y LIQUIDACION DE TRANSACCIONES FINANCIERAS, INCLUIDAS LAS TRANSACCIONES CON TARJETAS DE CREDITO, SERVICIOS DE ASESORAMIENTO EN INVERSIONES ACTIVIDADES DE ASESORES Y CORREDORES HIPOTECARIOS. SE INCLUYEN TAMBIEN LAS ACTIVIDADES DE SERVICIOS DE ADMINISTRACION FIDUCIARIA Y DE CUSTODIA A CAMBIO DE UNA RETRIBUCION O POR CONTRATA"
+                            },
+                            {
+                                "code": "672001",
+                                "name": "ACTIVIDADES AUXILIARES DE LA FINANCIACION DE PLANES DE SEGUROS Y DE PENSIONES",
+                                "description": "EN ESTA CLASE, QUE ABARCA LAS ACTIVIDADES AUXILIARES DE LA FINANCIACION Y ADMINISTRACION DE PLANES DE SEGUROS Y DE PENSIONES O ESTRECHAMENTE RELACIONADAS CON ELLAS, PERO DISTINTAS DE LAS DE INTERMEDIACION FINANCIERA, SE INCLUYEN LAS ACTIVIDADES DE LOS SERVICIOS DE CORREDORES DE SEGUROS, PERITOS TASADORES Y LIQUIDADORESDE SINIESTROS Y ACTUARIOS, Y LAS DE ADMINISTRACION DEL SALVAMENTO.(INCLUYE A LOS INSPECTORES DE SINIESTROS DEL INS)"
+                            },
+                            {
+                                "code": "701001",
+                                "name": "ALQUILER DE CASAS Y OTROS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE EDIFICIOS DE APARTAMENTOS, CONDOMINOS,CASAS DE HABITACION Y PISOS O APARTAMENTOS AMUEBLADOS O SIN AMUEBLAR A CAMBIO DE UNA RETRIBUCION O CONTRATA."
+                            },
+                            {
+                                "code": "701002",
+                                "name": "ALQUILER DE LOCALES COMERCIALES Y CENTROS COMERCIALES",
+                                "description": "ESTA CLASE INCLUYE EL ALQUILER DE LOCALES COMERCIALES Y CENTROS COMERCIALES."
+                            },
+                            {
+                                "code": "701003",
+                                "name": "COMPRA Y VENTA DE PROPIEDADES (INVERSIONISTAS)",
+                                "description": "EN ESTA CLASE SE INCLUYEN LA COMPRA, VENTA, Y EXPLOTACION DE BIENES INMUEBLES PROPIOS O ARRENDADOS, TALES COMO EDIFICIOS DE APARTAMENTOS, VIVIENDAS Y EDIFICIOS NO RESIDENCIALES. SI SE TRATA DE UN AGENTE O CORREDOR DE BIENES RAICES VER ACIVIDAD 702001"
+                            },
+                            {
+                                "code": "701004",
+                                "name": "ALQUILER DE EDIFICIOS Y PROPIEDADES DIFERENTES A CASAS DE HABITACION",
+                                "description": "SE REFIERE AL ALQUILER DE EDIFICIOS NO HABITACIONEALES, LOTES, FINCAS, ETC."
+                            },
+                            {
+                                "code": "701005",
+                                "name": "ALQUILER DE MARCAS REGISTRADAS",
+                                "description": "ESTA CLASE ICLUYE EL ALQUILER DE MARCAS DEBIDAMENTE REGISTRADAS."
+                            },
+                            {
+                                "code": "701006",
+                                "name": "ALQUILER DE PATENTES (DE LICORES, UNICAMENTE)",
+                                "description": "ESTA CLASE INCLUYE A LOS PROPIETARIOS DE PATENTES DE LICORES QUE ARRENDAN ESTE BIEN INTANGIBLE A PERSONAS FISICAS O JURIDICAS."
+                            },
+                            {
+                                "code": "701007",
+                                "name": "EXPLOTACION DE FRANQUICIAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXPLOTACION DE FRANQUICIAS MEDIANTE LA VENTA DE DERECHOS DE EXPLOTACION DE LA MARCA."
+                            },
+                            {
+                                "code": "702001",
+                                "name": "AGENTES O CORREDORES DE BIENES RAICES",
+                                "description": "EN ESTA CLASE SE INCLUYE A LOS CORREDORES DE BIENES RAICES QUE DE ACUERDO AL REGLAMENTO DE LA LEY DE VENTAS SE DEFINE COMO LAS DILIGENCIAS EFECTUADAS POR PERSONAS FISICAS O JURIDICAS PARA LA COMPRA Y VENTA DE BIENES RAICES, QUE SON RETRIBUIDAS MEDIANTE EL PAGO DE UNA COMISION. ESTA ACTIVIDAD SE ENCUENTRA GRAVADA EN VENTAS CONFORME AL ART. 1 INCISO N) DE LA LEY GENERAL DEL IMPUESTO SOBRE LAS VENTAS. SI SE TRATA DE COMPRA Y VENTA DE PROPIEDADES PARA REINVERTIR VER ACTIVIDAD 701003."
+                            },
+                            {
+                                "code": "702002",
+                                "name": "ARRENDAMIENTO O ALQUILER DE BIENES INMUEBLES MEDIANTE CONTRATO VERBAL O ESCRITO.",
+                                "description": "EN ESTA CLASE SE INCLUYE LA COMPRA, VENTA O ALQUILER DE BIENES INMUEBLES MEDIANTE CONTRATO VERBAL O ESCRITO, DESTINADO A LA VIVIENDA O AL EJERCICIO DE UNA ACTIVIDAD ECONOMICA POR UN DETERMINADO TIEMPO QUE GENERALMENTE ES PROLONGADO. ADEMAS, INCLUYE EL ALQUILER DE EDIFICIOS DE APARTAMENTOS, CONDOMINIOS, CASAS DE HABITACION, PISOS O APARTAMENTOS."
+                            },
+                            {
+                                "code": "702003",
+                                "name": "MANTENIMIENTO, REPARACION Y LIMPIEZA DE LOS SERVICIOS Y BIENES COMUNES DE LA PROPIEDAD EN CONDOMINIO",
+                                "description": "CORRESPONDERAN AL CUIDADO Y LA VIGILANCIA DE LOS BIENES Y SERVICIOS COMUNES, LA ATENCION Y OPERACION DE LAS INSTALACIONES Y LOS SERVICIOS GENERALES. INCLUYE LA RECAUDACION DELA CUOTA QUE CADA PROPIETARIO QUE LE CORRESPONDA PARA LOS GASTOS COMUNES."
+                            },
+                            {
+                                "code": "711101",
+                                "name": "ALQUILER DE AUTOMOVILES DE TODO TIPO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE CUALQUIER TIPO DE AUTOMOVILES (RENTA CAR)"
+                            },
+                            {
+                                "code": "711102",
+                                "name": "ALQUILER DE MOTOCICLETA/SERVICIO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE MOTOCICLETAS SIN CONDUCTOR"
+                            },
+                            {
+                                "code": "711103",
+                                "name": "ALQUILER DE EQUIPO DE TRANSPORTE POR VIA TERRESTRE, ACUATICA O AEREA",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE EQUIPO DE TRANSPORTE TERRESTRE, COMO POREJEMPLO LOCOMOTORAS Y VAGONES DE FERROCARRIL, REMOLQUES Y SEMIRREMOLQUES, CASASRODANTES Y SIMILARES. TAMBIEN INCLUYE EL ALQUILER DE CONTENEDORES. EQUIPO ACUATICO, A SABER: BUQUES Y EMBARCACIONES COMERCIALES SIN TRIPULACION. VIA AEREA A SABER: AEROPLANOS, AVIONETAS, AVIONES SIN TRIPULACION"
+                            },
+                            {
+                                "code": "711105",
+                                "name": "ALQUILER DE CARRITOS DE GOLF Y OTROS",
+                                "description": "ESTA CLASE INCLUYE EL ALQUILER DE CARRITOS PARA CAMPOS DE GOLF, ASI COMO COCHES Y CARRITOS EN LOCALES COMERCIALES, BICICLETAS, ETC."
+                            },
+                            {
+                                "code": "712101",
+                                "name": "ALQUILER DE MAQUINARIA Y EQUIPO PARA USO AGRICOLA",
+                                "description": "ESTA CLASE ABARCA EL ALQUILER DE MAQUINARIA Y EQUIPO AGROPECUARIO SIN OPERARIOS, POR EJEMPLO CHAPULINES, TRACTORES, ETC."
+                            },
+                            {
+                                "code": "712201",
+                                "name": "ALQUILER DE MAQUINARIA Y EQUIPO DE CONSTRUCCION E INGENIERIA CIVIL",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE MAQUINARIA Y EQUIPO DE CONSTRUCCION E INGENIERIA CIVIL (INCLUSO CAMIONES GRUA), SIN OPERARIOS."
+                            },
+                            {
+                                "code": "712301",
+                                "name": "SERVICIOS DE INTERNET EN LOCALES PUBLICOS ( CAFE INTERNET )",
+                                "description": "ESTA CLASE INCLUYE LOS LOCALES PUBLICOS EN DONDE SE OFRECE A LOS CLIENTES ACCESO A INTERNET. PARA ELLO, EL LOCAL DISPONE DE COMPUTADORAS Y USUALMENTE COBRA UNA TARIFA FIJA POR UN PERIODO DETERMINADO DE TIEMPO POR EL USO DE DICHOS EQUIPOS, INCLUIDO EL ACCESO A INTERNET Y A DIVERSOS PROGRAMAS, TALES COMO PROCESADORES DE TEXTO, PROGRAMAS DE EDICION GRAFICA, VIDEOJUEGOS, COPIA DE CD O DVD, ETC. SERVICIO AFECTO AL IMPUESTO SOBRE LAS VENTAS SEGUN OFICIO DGT-308-2008 DEL 21 DE MAYO DE 2008."
+                            },
+                            {
+                                "code": "712302",
+                                "name": "ALQUILER DE MAQUINARIA Y EQUIPO DE OFICINA",
+                                "description": "ESTA CLASE ABARCA EL ALQUILER DE TODO TIPO DE MAQUINARIA Y EQUIPO DE OFICINA, COMO MAQUINAS DE REPRODUCCION, MAQUINAS DE ESCRIBIR Y PROCESADORAS DE TEXTOS; MAQUINAS DE CONTABILIDAD, COMO CALCULADORAS ELECTRONICAS, CAJAS REGISTRADORAS Y OTRAS MAQUINAS PROVISTAS DE DISPOSITIVOS DE CALCULO; Y EQUIPO DE INFORMATICA, COMO COMPUTADORAS DIGITALES, ANALOGICAS E HIBRIDAS, UNIDADES CENTRALES DE PROCESAMIENTO, UNIDADES PERIFERICAS Y LECTORAS MAGNETICAS Y OPTICAS, SIN OPERARIOS NI SERVICIOS ADMINISTRATIVOS."
+                            },
+                            {
+                                "code": "712901",
+                                "name": "ALQUILER DE MAQUINAS EXPENDEDORAS DE ALIMENTOS Y OTROS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE LAS MAQUINAS EXPENDEDORAS DE ALIMENTOS, BEBIDAS, DULCES, SORPRESAS, Y OTROS ARTICULOS, LAS CUALES INCLUYEN EL PRODUCTO A COMERCIALIZAR."
+                            },
+                            {
+                                "code": "712902",
+                                "name": "ALQUILER DE MAQUINAS DE ENTRETENIMIENTO (CON MONEDAS)",
+                                "description": "SE REFIERE AL ALQUILER Y/O EXPLOTACION DE MAQUINAS DE ENTRENIMIENTO YA SE QUE FUNCIONEN CON MONEDAS O FICHAS."
+                            },
+                            {
+                                "code": "712904",
+                                "name": "ALQUILER DE PELICULAS CINEMATOGRAFICAS (VIDEO CLUB) Y/O VIDEO JUEGOS",
+                                "description": "ESTA CLASE INCLUYE EL ALQUILER DE PELICULAS Y VIDEO JUEGOS DE TODO TIPO AL USUARIO FINAL."
+                            },
+                            {
+                                "code": "712905",
+                                "name": "ALQUILER DE EQUIPO PARA RADIO, TELEVISION Y COMUNICACIONES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE EQUIPO PARA RADIO, TELEVISION Y COMUNI- CACIONES, TALES COMO RADIO COMUNICADORES, CAMARAS, TELEFONO FIJOS O MOVILES (CELULARES), BEEPER, ETC EL SERVICIO DE ATENCION DE LLAMADAS SE INCLUYE EN LA CLASE 749905."
+                            },
+                            {
+                                "code": "712906",
+                                "name": "ALQUILER DE EQUIPO PARA DISPENSAR BILLETES (CAJERO AUTOMA-TICO)",
+                                "description": "EN ESTA CLASE SE INCLUYE TODO TIPO DE EQUIPO DISPENSADOR DE BILLETES O TAMBIEN LLAMADOS CAJEROS AUTOMATICOS."
+                            },
+                            {
+                                "code": "712907",
+                                "name": "ALQUILER MAQUINARIA Y EQUIPO PARA LA ELABORACION Y/O MANTENIMIENTO DE PRODUCTOS",
+                                "description": "EN ESTA CLASE SE INCLUYE TODO TIPO DE MAQUINARIA Y EQUIPO UTILIZADO EN LA ELABORACION Y/O MANTENIMIENTO O PRESERVACION DE TODO TIPO DE ALIMENTOS. (PUEDEN SER CONGELADORES)"
+                            },
+                            {
+                                "code": "712909",
+                                "name": "ALQUILER DE OTROS TIPOS DE MAQUINARIA Y EQUIPO PARA USO COMERCIAL",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE TODO TIPO DE MAQUINARIA INDUSTRIAL, MAQUINAS,HERRAMIENTAS, EQUIPO COMERCIAL, TAMBIEN EL DE RADIO, T.V.Y COMUNICACIONES. ADEMAS EL ALQUILER DE EQUIPO PARA EXPLOTACION DE MINAS Y YACIMIENTOS DE PETROLEOY EL DE MAQUINARIA PARA USO PROFESIONAL Y CIENTIFICO PARA MEDIR Y CONTROLAR Y PARA OTROS USOS COMERCIALES E INDUSTRIALES."
+                            },
+                            {
+                                "code": "712910",
+                                "name": "ALQUILER DE MAQUINARIA Y/O EQUIPO PARA USO INDUSTRIAL",
+                                "description": "ESTA CLASE INCLUYE EL ALQUILER DE MAQUINARIA Y/O EQUIPO UTILIZADA EN GENERAL PORLAS INDUSTRIAS EN SUS ACTIVIDADES DE PRODUCCION,TALES COMO MAQUINARIA PAR ELEVACION, MANIPULACION, MONTACARGAS, CINTAS TRANSPORTADORAS, TELEFERICOS. EL ARRENDAMIENTO FINANCIERO (LEASING) SE INCLUYE EN LA ACTIVIDAD 659101."
+                            },
+                            {
+                                "code": "712911",
+                                "name": "ALQUILER DE RAMPAS Y SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE RAMPAS, PLATAFORMAS Y SIMILARES, INDEPENDIENTEMENTE DEL USO QUE SE LES DE."
+                            },
+                            {
+                                "code": "713001",
+                                "name": "ALQUILER DE MENAJE",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER PARA USO DE HOGARES, EMPRESAS U OTROS DE MENAJE, INCLUYE MUEBLES, ELECTRODOMESTICOS, UTENSILIOS DE COCINA Y DE MESA."
+                            },
+                            {
+                                "code": "713002",
+                                "name": "ALQUILER DE EQUIPO RECREATIVO Y DEPORTIVO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE EQUIPO RECREATIVO Y DEPORTIVO TAL COMO: EMBARCACIONES DE RECREO, CANOAS, VELEROS, BICICLETAS, HAMACAS DE PLAYA Y SOMBRILLAS, ESQUIES, CARRITOS PARA CAMPOS DE GOLF, ASI COMO COCHES Y CARRITOS EN LOCALES COMERCIALES Y OTRO EQUIPO DE DEPORTE"
+                            },
+                            {
+                                "code": "713003",
+                                "name": "ALQUILER DE EQUIPO MEDICO Y ARTICULOS CONEXOS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE ARTICULOS Y EQUIPO MEDICO, COMO POR EJEMPLO CAMAS, SILLAS DE RUEDAS, MULETAS, ETC."
+                            },
+                            {
+                                "code": "713004",
+                                "name": "ALQUILER DE ARTICULOS EN GENERAL PARA LA INDUSTRIA",
+                                "description": "EN ESTA CLASE, QUE ABARCA EL ALQUILER DE TODO TIPO DE EFECTOS PERSONALES Y ENSERES DOMESTICOS, INDEPENDIENTEMENTE DE QUE SUS USUARIOS SEAN HOGARES O INDUSTRIAS, SE INCLUYE EL ALQUILER ESPECIALIZADO DE ARTICULOS TALES COMO PRODUCTOS TEXTILES (LAVADOS O NO), PRENDAS DE VESTIR Y CALZADO, MUEBLES, ARTICULOS DE CERAMICA Y DE VIDRIO, UTENSILIOS DE COCINA Y DE MESA, APARATOS ELECTRICOS Y DE USO DOMESTICO, EMBARCACIONES DE RECREO E INSTALACIONES CONEXAS, CABALLOS DE MONTAR, BICICLETAS, EQUIPO DE DEPORTES, INCLUSO DEPORTES ACUATICOS, JOYAS, INSTRUMENTOS DE MUSICA, MATERIAL DE ESCENOGRAFIA Y DE VESTUARIO, LIBROS, PERIODICOS Y REVISTAS, CINTAS Y DISCOS PARA GRABACIONES DE SONIDO Y DE IMAGEN, ETC. TAMBIEN SE INCLUYE EL ALQUILER DE ARTICULOS EN GENERAL."
+                            },
+                            {
+                                "code": "713012",
+                                "name": "ALQUILER DE TRAJES DE TODO TIPO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE TRAJES DE FIESTA Y ETIQUETA TALES COMO: VESTIDOS DE NOVIA, TRAJE ENTERO Y DE CEREMONIA, ESMOQUIN, ETC."
+                            },
+                            {
+                                "code": "713013",
+                                "name": "ALQUILER DE EQUIPO Y UTENSILIOS PARA EVENTOS ESPECIALES",
+                                "description": "ALQUILER DE EQUIPO DE DIVERSION E INSTALACIONES CONEXAS EN HOGARES O COMERCIOS."
+                            },
+                            {
+                                "code": "713053",
+                                "name": "ALQUILER DE ANIMALES (CABALLOS, SERPIENTES, ETC)",
+                                "description": "SE REFIERE AL ALQUILER DE ANIMALES DOMESTICOS TALES COMO LOS CABALLOS PARA MONTAR, Y OTROS COMO ALQUILER DE SERPIENETS PARA EXHIBICIòN."
+                            },
+                            {
+                                "code": "721001",
+                                "name": "CONSULTORES INFORMATICOS",
+                                "description": "ESTA CLASE ABARCA LOS SERVICIOS DE CONSULTORES EN EQUIPOS DE INFORMATICA, CON O SIN APLICACION DE LOS CORRESPONDIENTES PROGRAMAS DE INFORMATICA. POR LO GENERAL, ESTOS SERVICIOS SUPONEN EL ANALISIS DE LAS NECESIDADES Y LOS PROBLEMAS DE LOS USUARIOS Y LA PRESENTACION A ESTOS DE LA SOLUCION MAS APROPIADA."
+                            },
+                            {
+                                "code": "722003",
+                                "name": "DISEÑADOR GRAFICO, DE SOFWARE Y PAGINAS WEB",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES RELACIONADAS CON EL ANALISIS, EL DISEÑO Y LA PROGRAMACION DE SISTEMAS LISTOS PARA SER UTILIZADOS. ESTA ACTIVIDADES COMPRENDE TAMBIEN LA FORMULACION, LA PRODUCCION Y EL SUMINISTRO DE PROGRAMAS ENCARGADOS POR LOS USUARIOS, INCLUIDA LA DOCUMENTACION PERTINENTE, Y DE PROGRAMAS LISTOS PARA SER UTILIZADOS (PROGRAMAS COMERCIALES) O DE FACIL CONFECCION"
+                            },
+                            {
+                                "code": "723001",
+                                "name": "PROCESAMIENTO DE DATOS",
+                                "description": "EN ESTA CLASE, QUE ABARCA EL PROCESAMIENTO Y LA TABULACION DE TODO TIPO DE DATOS, SE INCLUYEN ACTIVIDADES TALES COMO EL PROCESAMIENTO DE DATOS PROPORCIONADOS POR EL CLIENTE Y LA PREPARACION DE INFORMES BASADOS EN LOS RESULTADOS DE DICHO PROCESAMIENTO, Y ACTIVIDADES ESPECIALIZADAS, COMO LAS DE TECLEADO Y OTROS TIPOS DE ENTRADA DE DATOS, CONVERSION (POR EJEMPLO, DE TARJETAS A CINTAS), RECONOCIMIENTO OPTICO DE CARACTERES, ETC. ESTOS SERVICIOS PUEDEN SER PRESTADOS DIRECTAMENTE Y POR INTERMEDIO DE TERMINALES DE ACCESO A LARGA DISTANCIA Y PUEDEN UTILIZAR PROGRAMAS DE PROPIEDAD DEL CLIENTE Y PROGRAMAS PATENTADOS. SE INCLUYE LA PRESTACION DE TALES SERVICIOS POR HORA Y BAJO UN REGIMEN DE TIEMPO COMPARTIDO. TAMBIEN SE INCLUYEN A ADMINISTRACION Y EL MANEJO PERMANENTES DEL EQUIPO DE PROCESAMIENTO DE DATOS INSTALADO POR LOS USUARIOS."
+                            },
+                            {
+                                "code": "724001",
+                                "name": "ACTIVIDADES RELACIONADAS CON BASES DE DATOS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS TRES TIPOS SIGUIENTES DE ACTIVIDADES RELACIONADAS CON BASES DE DATOS: PREPARACION DE BASES DE DATOS, A SABER, LA REUNION DE DATOS PROCEDENTES DE UNA O MAS FUENTES. ALMACENAMIENTO DE DATOS, CONCRETAMENTE, LA PREPARACION DE UN REGISTRO COMPUTADORIZADO QUE CONTENGA LOS DATOS DE UNA MANERA PREESTABLECIDA. FACILITACION DE LA INFORMACION ALMACENADA EN LA BASE DE DATOS, A SABER, EL SUMINISTRO DE DATOS CON ARREGLO A UN CIERTO ORDEN O A UNA DETERMINADA SECUENCIA, MEDIANTE SU RECUPERACION EN LINEA O MEDIANTE EL ACCESO A ELLOS EN LINEA (GESTION COMPUTADORIZADA). LOS DATOS PUEDEN SER DE DIVERSA INDOLE, COMO POR EJEMPLO DATOS FINANCIEROS, ECONOMICOS, ESTADISTICOS Y TECNICOS; PUEDEN SER DE ACCESO GENERAL O LIMITADO; Y PUEDEN ESTAR CLASIFICADOS SEGUN LO SOLICITE EL CLIENTE."
+                            },
+                            {
+                                "code": "725001",
+                                "name": "REPARACION DE EQUIPO DE COMPUTO",
+                                "description": "ESTA CLASE COMPRENDE LA REPARACION DE EQUIPO ELECTRONICO, COMO ORDENADORES Y ACCESORIOS INFORMATICOS Y EQUIPO PERIFERICO. SE INCLUYEN LA REPARACION DE: ORDENADORES DE ESCRITORIO, ORDENADORES PORTATILES, UNIDADES DE DISCO MAGNETICO, UNIDADES DE MEMORIA USB Y OTROS DISPOSITIVOS DE ALMACENAMIENTO, UNIDADES DE DISCO OPTICO (CD-RW, CD-ROM, DVD-ROM, DVD-RW), IMPRESORAS, PANTALLAS, TECLADOS, RATONES, PALANCAS DE MANDO Y BOLAS RODANTES, MODEMS INTERNOS Y EXTERNOS, TERMINALES INFORMATICAS ESPECIALIZADAS, SERVIDORES INFORMATICOS, ESCANERES, INCLUIDOS LECTORES DE CODIGO DE BARRAS, LECTORES DE TARJETAS INTELIGENTES, CASCOS DE REALIDAD VIRTUAL, PROYECTORES INFORMATICOS. ESTA ACTIVIDAD QUEDA AFECTA AL IMPUESTO SOBRE LAS VENTAS INDEPENDIENTEMENTE DEL LUGAR DONDE SE PRESTE EL SERVICIO, DE ACUERDO AL OFICIO DGT-87-07 DE LA DIRECCION GENERAL DE TRIBUTACION"
+                            },
+                            {
+                                "code": "725002",
+                                "name": "MANTENIMIENTO DE EQUIPO DE COMPUTO",
+                                "description": "ESTA CLASE COMPRENDE EL MANTENIMIENTO DE EQUIPO ELECTRONICO, COMO ORDENADORES Y ACCESORIOS INFORMATICOS Y EQUIPO PERIFERICO. SE INCLUYEN EL MANTENIMIENTO DE: ORDENADORES DE ESCRITORIO, ORDENADORES PORTATILES, UNIDADES DE DISCO MAGNETICO, UNIDADES DE MEMORIA USB Y OTROS DISPOSITIVOS DE ALMACENAMIENTO, UNIDADES DE DISCO OPTICO (CD-RW, CD-ROM, DVD-ROM, DVD-RW), IMPRESORAS, PANTALLAS, TECLADOS, RATONES, PALANCAS DE MANDO Y BOLAS RODANTES, MODEMS INTERNOS Y EXTERNOS, TERMINALES INFORMATICAS ESPECIALIZADAS, SERVIDORES INFORMATICOS, ESCANERES, INCLUIDOS LECTORES DE CODIGO DE BARRAS, LECTORES DE TARJETAS INTELIGENTES, CASCOS DE REALIDAD VIRTUAL, PROYECTORES INFORMATICOS."
+                            },
+                            {
+                                "code": "725003",
+                                "name": "REPARACION CAJAS REGISTRADORAS, CALCULADORAS, MAQUINAS DE CONTABILIDAD Y EQUIPO DE OFICINA",
+                                "description": "ESTA CLASE INCLUYE LA REPARACION DE CAJAS REGISTRADORAS, CALCULADORAS O MAQUINAS DE CONTABILIDAD, FOTOCOPIADORAS, FAX, ETC. DE ACUERDO AL OFICIO DGT-87-07 DE LA DIRECCION GENERAL DE TRIBUTACION, ESTA ACTIVIDAD QUEDA AFECTA A VENTAS INDEPENDIENTEMENTE DEL LUGAR DONDE SE PRESTE EL SERVICIO. EL EQUIPO DE COMPUTO SE ENCUENTRA EN EL CODIGO 725001"
+                            },
+                            {
+                                "code": "725004",
+                                "name": "MANTENIMIENTO DE CAJAS REGISTRADORAS, CALCULADORAS, MAQUINAS DE CONTABILIDAD",
+                                "description": "EN ESTA CLASE SE INCLUYE EL MANTENIMIENTO (NO CONTEMPLA REPARACION) DE MAQUINARIA Y EQUIPO DE OFICINA TALES COMO CAJAS REGISTRADORAS, CALCULADORAS, SUMADORAS, DATAFONOS Y OTROS EQUIPOS SIMILARES. POR SER MANTENIMIENTO NO SE ENCUENTRA SUJETO AL IMPUESTO SOBRE LAS VENTAS"
+                            },
+                            {
+                                "code": "729001",
+                                "name": "OTRAS ACTIVIDADES DE INFORMATICA",
+                                "description": "ESTA CLASE COMPRENDE OTRAS ACTIVIDADES RELACIONADAS CON LA TECNOLOGIA DE LA INFORMACION E INFORMATICA TALES COMO: RECUPERACION EN CASOS DE DESASTRE INFORMATICO, INSTALACION (CONFIGURACION) DE ORDENADORES PERSONALES, INSTALACION DE PROGRAMAS INFORMATICOS. NO SE INCLUYEN LAS ACTIVIDADES DE: INSTALACION DE ORDENADORES CENTRALES Y EQUIPO SIMILAR, PROGRAMACION INFORMATICA, CONSULTORIA DE INFORMATICA, GESTION DE INSTALACIONES INFORMATICAS, PROCESAMIENTO DE DATOS"
+                            },
+                            {
+                                "code": "731001",
+                                "name": "INVESTIGACION Y DESARROLLO EXPERIMENTAL EN EL CAMPO DE LAS CIENCIAS NATURALES Y LA INGENIERIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS TRABAJOS SISTEMATICOS DE NATURALEZA CREATIVA QUEFORMAN PARTE DE ACTIVIDADES DE INVESTIGACION Y DESARROLLO EN EL CAMPO DE LA CIENCIA, TECNOLOGIA E INGENIERIA PARA CREAR NUEVOS MATERIALES, PRODUCTOS, DISPOSITIVOS, PROCESOS, SISTEMAS Y SERVICIOS, Y PERFECCIONAR SUSTANCIALMENTE LOS YA EXISTENTES. LA INVESTIGACION Y DESAARROLLO CON FONDOS DE GOBIERNO, SE INCLUYE EN LA DIVISION 75 (ADMINISTRACION PUBLICA)."
+                            },
+                            {
+                                "code": "731003",
+                                "name": "METEOROLOGO POR CUENTA PROPIA",
+                                "description": "EN ESTA CLASE INCLUYE A LOS PROFESIONALES QUE BRINDAN ASESORIA EN EL CAMPO DE LACIENCIA QUE ESTUDIA LOS FENOMENOS ATMOSFERICOS,LAS PROPIEDADES DE LA ATMOSFERA,Y EN ESPECIAL SU RELACION CON EL TIEMPO ATMOSFERICO Y LA SUPERFICIE DE LA TIERRA Y MARES."
+                            },
+                            {
+                                "code": "732001",
+                                "name": "INVESTIGACIONES Y DESARROLLO EXPERIMENTAL EN EL CAMPO DE LAS CIENCIAS SOCIALES Y LAS HUMANIDADES",
+                                "description": "ESTA CLASE ABARCA LOS TRABAJOS SISTEMATICOS DE NATURALEZA CREATIVA QUE FORMA PARTE DE LOS TRES TIPOS DE ACTIVIDADES DE INVESTIGACION Y DESARROLLO DESCRITOS MAS ARRIBA Y SE REALIZAN EN EL CAMPO E LAS CIENCIAS SOCIALES (ECONOMIA, PSICOLOGIA, SOCIOLOGIA, DERECHO, ETC.) Y LAS HUMANIDADES (POR EJEMPLO, LINGüISTICA, IDIOMAS Y ARTE). SU OBJETIVO ES AMPLIAR EL CAUDAL DE CONOCIMIENTOS Y DESCUBRIR NUEVAS APLICACIONES."
+                            },
+                            {
+                                "code": "741101",
+                                "name": "BUFFETE DE ABOGADO, NOTARIO, ASESOR LEGAL",
+                                "description": "ESTA CLASE COMPRENDE LAS ACTIVIDADES DE REPRESENTACION DE INTERESES SEA O NO ANTE TRIBUNALES U OTROS ORGANOS JUDICIALES, ASESORAMIENTO Y REPRESENTACION EN PROCEDIMIENTOS CIVILES, PENALES O CONFLICTOS LABORALES, PREPARACION DE DOCUMENTOS JURIDICOS, ACTIVIDADES DE NOTARIOS PUBLICOS, EJECUTORES JUDICIALES, ARBITROS Y EXAMINADORES , REALIZADAS POR ABOGADOS O BAJO LA SUPERVISION DE LOS MISMOS."
+                            },
+                            {
+                                "code": "741203",
+                                "name": "ACTVIDAD DE CONTABILIDAD (CONTADORES), TENEDURIA DE LIBROS,AUDITORIA Y ASESOR FISCAL",
+                                "description": "ESTA CLASE ABARCA LAS ACTIVIDADES DE REGISTRO CONTABLE DE TRANSACCIONES COMERCIALES PARA EMPRESAS Y OTRAS ENTIDADES, LA PREPARACION DE ESTADOS DE CUENTAS, EL EXAMEN DE DICHOS ESTADOS Y LA CERTIFICACION DE SU EXACTITUD, Y LA PREPARACION DE DECLARACIONES DE INGRESOS PARA PERSONAS Y EMPRESAS. EN ESTA CLASE SE INCLUYE TAMBIEN LOS PROFESIONALES QUE BRINDAN SERVICIOS DE AUDITORIA Y ASESORIA EN MATERIA FISCAL"
+                            },
+                            {
+                                "code": "741301",
+                                "name": "ASESORES EN MERCADEO Y VENTAS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS ESTUDIOS SOBRE LAS POSIBILIDADES DE COMERCIALIZACION, LA ACEPTACION Y EL GRADO DE DIFUSION DE LOS PRODUCTOS Y SOBRE LOS HABITOS DE COMPRA DE LOS CONSUMIDORES, CON MIRAS A PROMOVER LAS VENTAS Y DESARROLLAR NUEVOS PRODUCTOS, ASI COMO LAS ENCUESTAS DE OPINION PUBLICA SOBRE CUESTIONES POLITICAS, ECONOMICAS Y SOCIALES."
+                            },
+                            {
+                                "code": "741302",
+                                "name": "ENCUESTAS DE OPINION PUBLICA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS ESTUDIOS A BASE DE ENCUENTAS DE OPINION PUBLICA, POR CUALQUIER MEDIO, REALIZADOS POR EMPRESAS U PROFESIONALES. INCLUYE ADEMAS LOSSERVICIOS DE LOS ENCUESTADORES. LOS ESTUDIOS PUEDEN ESTAR RELACIONADOS CON LA ACEPTACION, DIFUSION, DE UN PRODUCTO, HABITOS DE COMPRA, PARA PROMOVER VENTAS Y DESARROLLAR NUEVOS PRODUCTOS, ASI COMO ENCUESTAS POLITICAS, ECONOMICAS Y SOCIA- LES."
+                            },
+                            {
+                                "code": "741401",
+                                "name": "ECONOMISTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE A LOS PROFESIONALES EN CUALQUIER RAMA DE LA ECONOMIA"
+                            },
+                            {
+                                "code": "741402",
+                                "name": "ASESORAMIENTO EMPRESARIAL Y EN MATERIA DE GESTION",
+                                "description": "“ESTA CLASE COMPRENDE LA PRESTACION DE ASESORAMIENTO, ORIENTACION Y ASISTENCIA OPERACIONAL A EMPRESAS Y ORGANIZACIONES SOBRE CUESTIONES DE GESTION, COMO LAS RELACIONES PUBLICAS, COMUNICACION SOCIAL, PLANIFICACION ESTRATEGICA ORGANIZATIVA, ESFERAS DE DECISION DE CARACTER FINANCIERO; (SE INCLUYE EL DISENO DE METODOS O PROCEDIMIENTOS CONTABLES, PROGRAMAS DE CONTABILIDAD DE COSTOS, PROCEDIMIENTOS DE CONTROL PRESUPUESTARIO), LA PRESTACION DE ASESORAMIENTO Y AYUDA A LAS EMPRESAS Y LAS ADMINISTRACIONES PUBLICAS EN MATERIA DE PLANIFICACION, ORGANIZACION, EFICIENCIA Y CONTROL, INFORMACION ADMINISTRATIVA, ENTRE OTROS, ADEMAS DE OBJETIVOS Y POLITICAS DE COMERCIALIZACION; POLITICAS, PRACTICAS Y PLANIFICACION DE DERECHOS HUMANOS; Y PLANIFICACION DE LA PRODUCCION Y CONTROL, INFORMACION ADMINISTRATIVA DE ASESORAMIENTO Y GESTION COMBINADOS, COMO POR EJEMPLO LAS DE INGENIEROS Y ECONOMISTAS AGRONOMOS, DE ARBITRAJE Y CONCILIACION ENTRE LA GERENCIA Y EL PERSONAL; Y DE GESTION DE SOCIEDADES DE CARTERA, SERVICIOS DE ORGANIZACION Y COORDINACION DE BODAS Y EVENTOS (NO INCLUYE ALQUILER O VENTA DE ARTICULOS) SOLAMENTE ASESORIA Y LOGISTICA, FACILITADORES PARA VUELOS PRIVADOS SOLAMENTE ASESORIA Y LOGISTICA.” ADEMAS, CONTEMPLA LA ASESORIA Y LOGISTICA DE VUELOS COMERCIALES, EL HANDLING (ATENCION AL CLIENTE EN MOSTRADOR, SERVICIO DE RAMPA, SERVICIOS DE MANTENIMIENTO DE EQUIPO Y MAQUINARIA DE RAMPA Y/O AVIONES, COORDINACION DE OPERACIONES DE CAMPO, GESTION Y ADMINISTRACION DE PROCEDIMIENTOS PREVIOS AL VUELO, APROVISIONAMIENTO DE PLANES DE VUELO Y DATOS CLIMATICOS, SUPERVISION DE VUELOS, SERVICIOS DE ASISTENCIA Y ESCOLTA VIP A TRIPULACIONES Y CLIENTES, SERVICIOS A LA AERONAVE, MANTENIMIENTO A LA AERONAVE, CONTRATACION DE SERVICIOS DE COMBUSTIBLE, CONTRATACION DE ALIMENTACION, SERVICIO DE HOSPEDAJE, SERVICIO DE SEGURIDAD Y SERVICIO DE TRANSPORTE; ENTRE OTROS)."
+                            },
+                            {
+                                "code": "741407",
+                                "name": "ASESOR ADUANERO",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS DE ASESORIA EN MATERIA ADUANERA BRINDADOS POR PROFESIONALES EN ESTA RAMA, LOS CUALES NO SON CONSIDERADOS AUXILIARES DE LA FUNCION PUBLICA POR NO ESTAR AUTORIZADOS. CASO CONTRARIO, VER CODIGO 630904."
+                            },
+                            {
+                                "code": "741408",
+                                "name": "CORRESPONSAL DE RADIO, TELEVISION Y PRENSA ESCRITA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS POR PERSONAS QUE A CAMBIO DE UNA RETRIBUCION O POR CONTRATO COLABORAN CON LOS MEDIOS DE COMUNICACION EN CALIDADDE CORRESPONSALES. LOS PERIODISTAS PROFESIONALES SE INLCUYEN EN LA ACTIVIDAD 741404"
+                            },
+                            {
+                                "code": "742102",
+                                "name": "ACTIVIDADES DE ARQUITECTURA E INGENIERIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS PRESTADOS POR PROFESIONALES FISICOS O JURIDICOS DE ARQUITECTURA E INGENIERIA TALES COMO: TOPOGRAFOS (GEOMATICOS), CIVIL, AGRONOMO, INDUSTRIAL, FORESTAL, MECANICO, QUIMICO, ELECTROMECANICO, ELECTRICO, EN SISTEMAS DE ACONDICIONAMIENTO DE AIRE Y/REFRIGERACION, EN INFORMATICA, OCEANICO, NAVAL, AMBIENTAL, AGRICOLA, AERONATICO, FISICO, NUCLEAR, GENETICO, ALIMENTARIO, AGROINDISTRIAL, SANITARIO, METROLOGO ETC. TAMBIEN INCLUYE EL ASESORAMIENTO TECNICO EN CONSTRUCCIONES Y OBRAS DE INGENIERIA CIVIL."
+                            },
+                            {
+                                "code": "742105",
+                                "name": "SERVICIOS DE CONSULTORIA EN MANTENIMIENTO INDUSTRIAL Y MECANICO",
+                                "description": "SE REFIERE A SERVICIOS DE ASESORIA O CONSULTORIA INDUSTRIAL, MECANICA, PRECISION, ETC, PRESTADOS A TALLERES, LUGARES ESPECIALIZADOS O EMPRESAS POR PROFESIONALES O TECNICOS A CAMBIO DE UNA RETRIBUCION ECONOMICA, SEA POR ASESORAMIENTO O MANTENIMIENTO."
+                            },
+                            {
+                                "code": "742107",
+                                "name": "QUIMICOS",
+                                "description": "ESTA CLASE INCLUYE A LOS PROFESIONALES EN QUIMICA"
+                            },
+                            {
+                                "code": "742108",
+                                "name": "ACTIVIDADES DE GEOGRAFIA Y/O GEOLOGIA",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES DE GEOLOGICAS Y DE PROSPECCION, QUE SEBASAN EN LA REALIZACION DE MEDICIONES Y OBSERVACIONES DE SUPERFICIE PARA OBTENER INFORMACION SOBRE LA ESTRUCTURA DEL SUBSUELO Y LA UBICACION DE YACIMIENTOS DEPETROLEO, GAS NATURAL Y MINERALES, Y DEPOSITOS DE AGUAS SUBTERRANEAS, PUEDEN INCLUIR ESTUDIOS AEROGEOFISICOS, ESTUDIOS HIDROLOGICOS, ETC. INCLUYE ADEMAS LAS ACTIVIDADES DE GEOGRAFIA"
+                            },
+                            {
+                                "code": "742110",
+                                "name": "BIOLOGO POR CUENTA PROPIA",
+                                "description": "ESTA CLASE INCLUYE A LOS PROFESIONALES QUE BRINDAN SERVIOCIOS Y/O ASESORIA EN EL CAMPO DE LA BIOLOGIA. LA CUAL ABARCA UN AMPLIO ESPECTRO DE CAMPOS DE ESTUDIO QUE, A MENUDO, SE TRATAN COMO DISCIPLINAS INDEPENDIENTES. JUNTAS, ESTUDIAN LA VIDA EN UN AMPLIO CAMPO DE ESCALAS."
+                            },
+                            {
+                                "code": "742112",
+                                "name": "DIBUJANTE ARQUITECTONICO Y/O PLANOS DE CONSTRUCCION",
+                                "description": "EN ESTA CLASE SE INCLUYE A LOS DIBUJANTES ARQUITECTONICOS, DE PLANOS DE CONSTRUCCION A CAMBIO DE UNA RETRIBUCION O POR CONTRATO."
+                            },
+                            {
+                                "code": "742201",
+                                "name": "ENSAYOS Y ANALISIS TECNICOS",
+                                "description": "ESTA CLASE ABARCA LOS ENSAYOS DE TODO TIPO DE MATERIALES Y PRODUCTOS, COMO POR EJEMPLO MINERALES, ALIMENTOS, ETC., PARA DETERMINAR SU COMPOSICION Y PUREZA; LOS ENSAYOS DE CALIFICACION Y FIABILIDAD, LA CERTIFICACION DE PRODUCTOS, LOS ANALISIS DE DEFECTOS, LA EVALUACION DE MATERIALES, ETC.; LOS ENSAYOS PARA DETERMINAR LAS PROPIEDADES FISICAS Y EL RENDIMIENTO DE PRODUCTOS Y MATERIALES EN CUANTO, POR EJEMPLO, A SU RESISTENCIA, ESPESOR, DURABILIDAD, CONDUCTIVIDAD ELECTRICA, RADIACTIVIDAD, ETC. TAMBIEN SE INCLUYEN LOS ENSAYOS DE PRODUCTOS TEXTILES, LOS ENSAYOS RADIOGRAFICOS DE SOLDADURAS Y ARTICULACIONES Y LOS ENSAYOS DE MAQUINAS, MOTORES, AUTOMOVILES, INSTRUMENTOS Y EQUIPO ELECTRONICO, SE BASEN O NO EN EL USO DE MA QUETAS O MODELOS DE BARCOS, AERONAVES, REPRESAS, ETC."
+                            },
+                            {
+                                "code": "742202",
+                                "name": "PROFESIONALES EN TECNOLOGIA DE ALIMENTOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS Y ASESORIA EN TECNOLOGIA DE ALIMENTOS, CERTIFICACION DE PRODUCTOS, ETC."
+                            },
+                            {
+                                "code": "743001",
+                                "name": "PUBLICIDAD",
+                                "description": "ESTA CLASE INCLUYE LA PRESTACION DE SERVICIOS DE PUBLICIDAD EN GENERAL. LAS ACTIVIDADES DE LAS EMPRESAS DE PUBLICIDAD SEAN FISICAS O JURIDICAS, PROPIETARIO O NO, INTERMEDIARIOS,QUE ABARCAN LA CREACION Y COLOCACION DE ANUNCIOS PARA SUS CLIENTES EN DIARIOS, REVISTAS, PERIODICOS, SUPLEMENTOS Y OTROS IMPRESOS, ESTACIONES DE RADIO Y TELEVISION; LA PUBLICIDAD AL AIRE LIBRE, COMO POR EJEMPLO MEDIANTE FABRICACION DE CARTELES O ROTULOS ILUMINADOS O NO, TABLEROS, BOLETINESY CARTELERAS, Y LA DECORACION DE ESCAPARATES, EL DISENO DE SALAS DE EXHIBICION,LA COLOCACION DE ANUNCIOS EN AUTOMOVILES Y AUTOBUSES, ETC.; LA REPRESENTACION DE LOS MEDIOS DE DIFUSION, A SABER, LA VENTA DE TIEMPO Y ESPACIO DE DIVERSOSMEDIOS DE DIFUSION INTERESADOS EN LA OBTENCION DE ANUNCIOS; LA PUBLICIDAD AEREA ;LA DISTRIBUCION Y ENTREGA DE MATERIALES Y MUESTRAS DE PUBLICIDAD; EL ALQUILER ESPACIOS DE PUBLICIDAD; ETC."
+                            },
+                            {
+                                "code": "743004",
+                                "name": "SERVICIOS DE PUBLICIDAD",
+                                "description": "SE REFIERE A LOS SERVICIOS PRESTADOS TANTO POR AGENCIAS PUBLICITARIAS COMO POR PROFESIONALES EN PUBLICIDAD DE MANERA REMUNERADA."
+                            },
+                            {
+                                "code": "743005",
+                                "name": "ALQUILER DE ESPACIOS PUBLICITARIOS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER DE ESPACIOS PARA TRANSMISION DE PROGRAMAS RADIALES EN RADIOEMISORAS RURALES, ALQUILER DE VALLAS PUBLICITARIAS Y SIMILARES.EL ALQUILER DE ESPACIOS TELEVISIVOS, DE PRENSA Y DE RADIOEMISORAS URBANAS SE ENCUENTRAN AFECTAS AL IMPUESTO GENERAL SOBRE LAS VENTAS Y SE CLASIFICAN EL EL CODIGO 743001."
+                            },
+                            {
+                                "code": "743006",
+                                "name": "PUBLICIDAD A TRAVES DE MEDIOS ELECTRONICOS",
+                                "description": "ESTA CLASE INCLUYE TODO LOS SERVICIOS PUBLICITARIOS PRESTADOS ATRAVES DE INTERNET. Y/O CUALQUIER OTRO MEDIO ELECTRONICO DE AVANZADA."
+                            },
+                            {
+                                "code": "749101",
+                                "name": "SERVICIOS DE ADMINISTRACION DE PERSONAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LA BUSQUEDA, SELECCION, RECOMENDACION Y COLOCACION DE PERSONAL PARA EMPLEO EN DISTINTOS SECTORES. LOS SERVICIOS PUEDEN PRESTARSE A EMPLEADORES Y A CANDIDATOS A EMPLEO Y PUEDEN ABARCAR LA FORMULACION DE DESCRIPCIONES DE FUNCIONES, LA SELECCION Y EL EXAMEN DE CANDIDATOS, LA VERIFICACION DE REFERENCIAS, ETC. SE INCLUYEN LAS ACTIVIDADES DE BUSQUEDA Y COLOCACION DE PERSONAL EJECUTIVO, ASI COMO LAS DE SUBCONTRATACION DE MANO DE OBRA, A SABER, LAS CONSISTENTES EN PROPORCIONAR, POR LO GENERAL TEMPORALMENTE, PERSONAL YA CONTRATADO Y REMUNERADO POR LA AGENCIA"
+                            },
+                            {
+                                "code": "749102",
+                                "name": "SERVICIOS DE BIBLIOTECOLOGIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS DE BIBLIOTECOLOGIA PRESTADOS POR PROFESIONALES INDEPENDIENTES O EMPRESAS ESPECIALISTAS EN EL CAMPO, A CAMBIO DE UNA RETRIBUCION O POR CONTRATA."
+                            },
+                            {
+                                "code": "749201",
+                                "name": "SERVICIOS DE INVESTIGACION, SEGURIDAD PRIVADA, AGENCIAS Y CONSULTORES",
+                                "description": "ESTA CLASE ABARCA LAS ACTIVIDADES DE INVESTIGACION, VIGILANCIA, CUSTODIA Y OTRAS ACTIVIDADES DE PROTECCION DE PERSONAS Y BIENES, SE INCLUYEN LA COMPROBACION DE ANTECEDENTES PERSONALES, BUSQUEDA DE PERSONAS DESAPARECIDAS, INVESTIGACION DE ROBOS Y DESFALCOS, EL PATRULLAJE Y OTRAS ACTIVIDADES SIMILARES. ASI COMO OTROS MEDIOS DE PROTECCION COMO PERROS GUARDIANES, VEHICULOS BLINDADOS, GUARDAESPALDAS, PATRULLAJE DE CALLES, GUARDAS Y SERENOS DE VIVIENDAS O APARTAMENTOS, OFICINAS, FABRICAS, OBRAS EN CONSTRUCCION, HOTELES, TEATROS, SALONES DE BAILE, ETC; DETECTIVES Y VIGILANCIA MEDIANTE DISPOSITIVOS DE PROTECCION MECANICOS O ELECTRICOS, ASESORAMIENTO EN MATERIA DE SEGURIDAD INDUSTRIAL, IDENTIFICACION DACTILOSCOPICA, CALIGRAFICA Y DE FIRMAS, ENTRE OTRAS."
+                            },
+                            {
+                                "code": "749204",
+                                "name": "INSTRUCTOR DE TIRO (MANEJO DE ARMAS).",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS INSTRUCTORES DE MANEJO DE ARMAS O TIRO."
+                            },
+                            {
+                                "code": "749301",
+                                "name": "SERVICIOS DE FUMIGACION (NO AGRICOLA)",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS DE FUMIGACION NO AGRICOLA"
+                            },
+                            {
+                                "code": "749302",
+                                "name": "SERVICIOS DE LIMPIEZA (INTERIORES Y EXTERIORES)",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE LIMPIEZA TANTO INTERIOR COMO EXTERIOR DE EDIFICIOS, OFICINAS, FABRICAS, ALMACENES, LOCALES COMERCIALES Y DE PROFESIONALES, EDIFICIOS RESIDENCIALES, ETC."
+                            },
+                            {
+                                "code": "749401",
+                                "name": "ESTUDIOS FOTOGRAFICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS ESTUDIOS FOTOGRAFICOS CON LOCAL."
+                            },
+                            {
+                                "code": "749402",
+                                "name": "SERVICIO DE FOTOGRAFIA (FOTOGRAFO)",
+                                "description": "SE REFIERE AL SERVICIO DE FOTOGRAFIA INDEPENDIENTE, SIN LOCAL."
+                            },
+                            {
+                                "code": "749501",
+                                "name": "SERVICIOS DE ENVASE Y EMPAQUE",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES DE ENVASE Y EMPAQUE A CAMBIO DE UNARETRIBUCION O POR CONTRATA, TALES COMO LA MEZCLA DE SUSTANCIAS Y SU INSERCION ENAEROSOLES, LATAS, BOTELLAS, BOLSAS PLASTICAS Y OTROS TIPOS DE ENVASE O EMPAQUE."
+                            },
+                            {
+                                "code": "749901",
+                                "name": "SERVICIO DE FOTOCOPIADO Y OTROS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE FOTOCOPIADO ASI COMO LA CONFECCION DE EMPASTES DE LUJO, EMPASTES SUAVES, EMPASTES CON RESORTES PLASTICOS EN ESPIRAL, RESORTE PLASTICO TRADICIONAL, RESORTE METALICO DOBLE \"O\", EMPASTES RUSTICOS, ETC."
+                            },
+                            {
+                                "code": "749902",
+                                "name": "SERVICIOS DE LEVANTADO DE TEXTO Y/O CORRECCION DE TEXTOS Y OTROS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS DE LEVANTADO DE TEXTO Y/O CORRECCION DE TEXTOS Y OTROS, GENERALMENTE BRINDADOS POR UN PROFESIONAL EN FILOLOGIA, GRAMATICA O RAMAS RELACIONADAS"
+                            },
+                            {
+                                "code": "749903",
+                                "name": "SERVICIOS SECRETARIALES Y/O OFICINISTA",
+                                "description": "ESTA CLASE INCLUYE UNA VARIEDAD ACTIVIDADES DE SOPORTE ESPECIALIZADO DE OFICINA Y PREPARACION DE DOCUMENTOS, EDICION Y CORRECCION DE DOCUMENTOS; TIPEADO, PROCESAMIENTO DE TEXTOS O EDICION; SERVICIOS DE SOPORTE SECRETARIALES; TRASCRIPCION DE DOCUMENTOS Y OTROS SERVICIOS SECRETARIALES."
+                            },
+                            {
+                                "code": "749904",
+                                "name": "SERVICIO DE DISEÑO O DECORACION DE INTERIORES (POR CUENTA PROPIA).",
+                                "description": "INCLUYE LOS SERVICIOS DE DECORACION DE EVENTOS ESPECIALES, SERVICIOS BRINDADOS POR DECORADORES INDEPENDIENTES"
+                            },
+                            {
+                                "code": "749905",
+                                "name": "SERVICIO DE CONTESTACION DE TELEFONOS (CALL CENTER)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ACTIVIDAD DE SERVICIO DE CONTESTACION DE TELEFONOS REALIZADAS GENERALMENTE PARA CLIENTES COMERCIALES."
+                            },
+                            {
+                                "code": "749906",
+                                "name": "SERVICIOS DE TRADUCTOR",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS DE TRADUCCION E INTERPRETACION DE CUALQUIER IDIOMA, POR CUALQUIER MEDIO UTILIZADO."
+                            },
+                            {
+                                "code": "749907",
+                                "name": "SERVICIO DE INSPECCION DE TODO TIPO DE MERCADERIAS Y ACTIVOS(INCLUYE DROGAS)",
+                                "description": "EN ESTA CLASE SE INCLUYE TODO TIPO DE CHEQUEO O REVISION DE MERCANCIAS EN GENERAL A NIVEL DE PUERTOS Y AEROPUERTOS. ASI COMO LA INSPECCION DE DROGAS YA SEA DE FORMA TERRESTRE O EN ACTVIDADES DE BUCEO."
+                            },
+                            {
+                                "code": "749908",
+                                "name": "SERVICIO DE RECOLECCION DE MONEDAS DE LOS TELEFONOS PUBLICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE RECAUDAR LAS MONEDAS DE LOS TELEFONOS PUBLICOS."
+                            },
+                            {
+                                "code": "749911",
+                                "name": "AGENCIAS FOTOGRAFICAS POR CATALOGO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL ALQUILER O VENTA DE FOTOGRAFIAS A TRAVES DE LA ADMINISTRACION DE BANCOS DE IMAGENES (CATALOGOS)."
+                            },
+                            {
+                                "code": "749914",
+                                "name": "SERVCICIO DE COBRANZA DE RECIBOS PUBLICOS Y OTROS",
+                                "description": "SE REFIERE A LAS EMPRESAS O LOCALES COMERCIALES QUE FACILITAN EL SERVICIO DE CANCELACION DE LOS RECIBOS PUBLICOS,PAGO DE IMPUESTOS, PAGO DE PRESTAMOS A CAMBIO DE UNA COMISION."
+                            },
+                            {
+                                "code": "749917",
+                                "name": "MODELAJE PROFESIONAL (MODELO)",
+                                "description": "ESTA CLASE INCLUYE LAS PERSONAS QUE SE DEDICAN PROFESIONALMENTE A EXHIBIR, PRENDAS DE VESTIR, ROPA, ACCESORIOS Y OTROS; A SOLICITUD DE TERCERAS PERSONAS. TAMBIEN INCLUYE A LAS PERSONAS QUE SON REPRESENTADAS POR AGENCIAS DE MODELOS, PARA LAS CUALES POSAN PARA SER REPRESENTADAS EN UNA OBRA DE ARTE, UN CUADRO, UNA ESCULTURA O UNA FOTOGRAFIA, ASI COMO LAS QUE TRABAJAN DE FORMA INDEPENDIENTE."
+                            },
+                            {
+                                "code": "749918",
+                                "name": "AGENCIAS DE COBRO Y CALIFICACION CREDITICIA",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS SIGUIENTES ACTIVIDADES: COBRO DE CANTIDADES ADEUDADAS Y ENTREGA DE ESOS FONDOS A LOS CLIENTES, COMO SERVICIOS DE COBRO DE FACTURAS O DE DEUDAS. COMPILACION DE INFORMACION, COMO HISTORIALES DE CREDITO Y DE EMPLEO DE PEROSNAS E HISTORIALES DE CREDITO DE EMPRESAS Y SUMINISTROS DE ESA INFORMACION A INSTITUCIONES FINANCIERAS, EMPRESAS DE VENTA AL POR MENOR Y OTRAS ENTIDADES QUE NECESITAN PODER EVALUAR LA SOLVENCIA DE ESAS PERSONAS Y EMPRESAS"
+                            },
+                            {
+                                "code": "751105",
+                                "name": "ENTES PUBLICOS DE NATURALEZA TRIBUTARIA E INSCRIPCION DE BIENES.",
+                                "description": "ENTES PUBLICOS DE NATURALEZA TRIBUTARIA E INSCRIPCION DE BIENES."
+                            },
+                            {
+                                "code": "751201",
+                                "name": "JUNTAS DE EDUCACION, COMEDORES ESCOLARES, PATRONATOS, COOPERATIVAS ESCOLARES, COLEGIALES, VOCACIONALES",
+                                "description": "INCLUYE LOS PROGRAMAS QUE PRESTAN LOS SERVICIOS EDUCATIVOS PUBLICOS DE ENSEÑANZAPRIMARIA, SECUNDARIA Y UNIVERSITARIA, ASI COMO DE PROGRAMAS DE EDUCACION PROFES IONAL. SEGUN EL ARTICULO 6 DEL REGLAMENTO A LA LEY DEL IMPUESTO SOBRE LA RENTA, DEBEN REGISTRARSE COMO DECLARANTES DE DICHO IMPUESTO."
+                            },
+                            {
+                                "code": "751202",
+                                "name": "COMITES CANTONALES DE DEPORTES Y RECREACION",
+                                "description": "SE INCLUYEN LOS COMITES CANTONALES DE DEPORTES Y RECREACION LOS CUALES DE ACUERDO AL PRONUNCIAMIENTO DE LA PROCURADURIA GENERAL DE LA REPUBLICA C-136-2002 DEL 04/06/2002 ESTAN EXENTOS DE TODO TRIBUTO. ADEMAS DE ACUERDO AL ART. 8 INCISO Q) DELA LEY DE RENTA ESTAS ENTIDADES PUEDEN RECIBIR DONACIONES, LAS CUALES SERAN DEDUCIBLES DE GASTOS."
+                            },
+                            {
+                                "code": "751301",
+                                "name": "ACTIVIDADES DEL SECTOR PUBLICO RELACIONADAS CON LA INFRAESTRUCTURA",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ACTIVIDADES DEL SECTOR PUBLICO, RELACIONADAS SOBRE TODO CON LA INFRAESTRUCTURA, ASUNTOS RELACIONADOS CON LA ORDENACION DE TIERRAS, ADMINISTRACION DE ACTIVIDADES VETERINARIAS Y FORESTALES, PESCA, COMBUSTIBLE, ENERGIA, MINERIA, TURISMO, TRANSPORTE, COMUNICACIONES, TALES COMO CAMINOS Y CARRETERAS, SUMINISTRO DE AGUA, FERROCARRILES, TRENES URBANOS Y CONSTRUCCION DE INSTALACIONES PARA EL TRANSPORTE AEREO. ACTIVIDADES DE SERVICIOS ADMINISTRATIVOSEN GENERAL."
+                            },
+                            {
+                                "code": "751302",
+                                "name": "FONDOS PUBLICOS (ACTIVIDADES DEL SECTOR PUBLICO)",
+                                "description": "ESTA CLASE INCLUYE ACTIVIDADES DEL SECTOR PUBLICO TALES COMO: RELACIONADAS CON LA INFRAESTRUCTURA, ORDENACION DE TIERRAS DE USO AGROPECUARIO, REFORMA AGRARIA YCOLONIZACION , REGULACION DE COMERCIALIZACION DE PRODUCTOS AGROPECUARIOS Y CONSECION DE SUBVENCIONES, ADMINISTRACION DE LA LUCHA CONTRA PLAGAS INSPECCION DE CULTIVOS Y PRODUCTOS, ACTIVIDADES VETERINARIAS, FORESTALES, PESCAS CON FINES COMERCIALES Y DEPORTIVOS, SERVICIOS RELACIONADOD CON EL COMBUSTIBLE Y LA ENERGIA, COMBUSTIBLES RELACIONADOS CON LA ENERGIA ELECTRICA, CON LA MINERIA Y RECURSOS MINERALES, EXPLOTACION, CONSERVACION Y COMERCIALIZACION DE YACIMIENTOS. ADMINISTRACION DE PROYECTOS DE OBJETIVOS MULTIPLES, REGULACION, CONSECION DE LICENCIAS E INSPECCION RELACIONADA CON EL SECTOR COMERCIAL DIVERSO. EJECUCION DE MEDIDAS DE POLITICAS DE DESARROLLO REGIONAL PARA REDUCIR EL DESEMPLEO Y LUCHA CONTRA EL SUBDESARROLLO, ASI COMO LA REGULACION Y ADMINISTRACION DE ACTIVIDADES RELACIONADAS CON LOS TRANSPORTES Y LAS COMUNICACIONES, TALES COMO LOS REFERENTES A CAMINOS Y CARRETERAS INSTALACIONES DE SUMINISTRO DE AGUA,FERROCARRILLES, TRENES URBANOS, TRANSPORTE AEREO, OBRAS HIDROGRAFICAS, PUENTES, ASI COMO LA ADQUISICION DE OTROSBIENES Y SERVICIOS NECESARIOS PARA EL CUMPLIMIENTO DEL FONDO."
+                            },
+                            {
+                                "code": "751401",
+                                "name": "ACTIVIDADES DE SERVICIOS AUXILIARES PARA LA ADMINISTRACION PUBLICA EN GENERAL",
+                                "description": "ESTA CLASE ABARCA LAS ACTIVIDADES DE SERVICIOS DE PERSONAL Y OTRAS ACTIVIDADES DE SERVICIOS GENERALES. ADMINISTRACION Y FUNCIONAMIENTO DE LOS SERVICIOS DE PERSONAL EN GENERAL, ESTEN O NO RELACIONADOS CON UNA FUNCION CONCRETA. FORMULACION Y APLICACION DE NORMAS Y PROCEDIMIENTOS GENERALES DE PERSONAL EN MATERIA DE METODOS DE SELECCION, CALIFICACION Y ASCENSO, DESCRIPCION DE FUNCIONES, EVALUACION Y CLASIFICACION, APLICACION DE REGLAMENTOS DE PERSONAL, ETC. ADMINISTRACION, DIRECCION Y RESPALDO DE SERVICIOS GENERALES, TALES COMO LOS DE SUMINISTRO Y COMPRA CENTRALIZADOS, CONSERVACION Y CUSTODIA DE REGISTROS Y ARCHIVOS PUBLICOS, ADMINISTRACION DE EDIFICIOS DE PROPIEDAD PUBLICA U OCUPADOS POR LA ADMINISTRACION PUBLICA , SERVICIOS DE OFICINAS CENTRALES Y OTROS SERVICIOS GENERALES NO RELACIONADOS CON NINGUNA FUNCION CONCRETA."
+                            },
+                            {
+                                "code": "752101",
+                                "name": "RELACIONES EXTERIORES",
+                                "description": "EN ESTA CLASE SE INCLUYEN LA ADMINISTRACION Y EL FUNCIONAMIENTO DEL MINISTERIO DE RELACIONES EXTERIORES Y DE LAS MISIONES DIPLOMATICAS Y CONSULARES EN EL EXTRANJERO Y ANTE ORGANIZACIONES INTERNACIONALES. LA ADMINISTRACION, LA DIRECCION Y EL RESPALDO DE SERVICIOS INFORMATIVOS Y CULTURALES QUE SE PRESTAN EN EL EXTRANJERO. EL SUMINISTRO DE AYUDA ECONOMICA A PAISES EN DESARROLLO, SEA EFECTUADO O NO POR CONDUCTO DE ORGANIZACIONES INTERNACIONALES. EL SUMINISTRO DE AYUDA MILITAR A OTROS PAISES. ASUNTOS RELACIONADOS CON EL COMERCIO INTERNACIONAL EN GENERAL, COMO EL COMERCIO EXTERIOR, LA FINANCIACION INTERNACIONAL Y CUESTIONES DE CARACTER TECNICO. ASISTENCIA INTERNACIONAL, COMO PROGRAMAS DE SOCORRO A REFUGIADOS Y DE LUCHA LUCHA CONTRA EL HAMBRE."
+                            },
+                            {
+                                "code": "752201",
+                                "name": "ACTIVIDADES DE DEFENSA",
+                                "description": "ESTA CLASE ABARCA ASUNTOS RELACIONADOS CON LA DEFENSA MILITAR Y CIVIL. ADMINISTRACION, SUPERVISION Y GESTION DE ASUNTOS Y FUERZAS DE DEFENSA MILITAR: EJERCITO, MARINA, FUERZAS AEREA Y ESPACIAL; MANDOS Y FUERZAS DE INGENIERIA, TRANSPORTE, COMUNICACIONES, INTELIGENCIA, SUMINISTRO DE MATERIALES, PERSONAL Y OTRAS FUERZAS DE ENDOLE CONEXA NO DESTINADAS AL COMBATE; Y FUERZAS AUXILIARES DE RESERVA Y PARA EL SISTEMA DE DEFENSA. ABASTECIMIENTO DE EQUIPO, ESTRUCTURAS, SUMINISTROS, ETC. ACTIVIDADES SANITARIAS PARA EL PERSONAL MILITAR EN CAMPANA. ADMINISTRACION, FUNCIONAMIENTO Y RESPALDO DE FUERZAS DE DEFENSA CIVIL. PRESTACION DE APOYO A LA ELABORACION DE PLANES DE EMERGENCIA Y LA EJECUCION DE MANIOBRAS CON LA PARTICIPACION DE INSTITUCIONES Y CIVILES. SE INCLUYEN LA APLICACION DE LAS POLITICAS DE"
+                            },
+                            {
+                                "code": "752301",
+                                "name": "ACTIVIDADES DE MANTENIMIENTO DEL ORDEN PUBLICO Y DE SEGURIDAD",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES POLICIALES Y DE LUCHA CONTRA INCENDIOS, LA ADMINISTRACION Y EL FUNCIONAMIENTO DE TRIBUNALES Y LA ADMINISTRACION Y EL FUNCIONAMIENTO DE PRISIONES. LA ADMINISTRACION Y DIRECCION DE FUERZAS DE POLICIA REGULARES Y AUXILIARES QUE DEPENDEN DE LAS AUTORIDADES PUBLICAS, DE FUERZAS DE VIGILANCIA PORTUARIA, FRONTERIZA Y COSTERA Y DE OTRAS FUERZAS ESPECIALES DE POLICIA. ENTRE LAS FUNCIONES DE LA POLICIA SE INCLUYEN LA ORDENACION DEL TRAFICO, EL REGISTRO DE EXTRANJEROS, LA UTILIZACION DE LABORATORIOS POLICIALES Y EL MANTENIMIENTO DE FICHEROS DE DETENIDOS. EL SUMINISTRO DE EQUIPO Y MATERIALES PARA LOS SRVICIOS POLICIALES, INCLUSO VEHICULOS, AERONAVES Y EMBARCACIONES. PREVENCION YEXTINCION DE INCENDIOS. ADMINISTRACION Y FUNCIONAMIENTO DE CUERPOS ORDINARIOS Y"
+                            },
+                            {
+                                "code": "752302",
+                                "name": "SERVICIOS DE VIGILANCIA O CONTROL PORTUARIA, COSTERA, AEREA,Y FRONTERIZA",
+                                "description": "SE INCLUYE LA PRESTACION DE LOS SERVICIOS DE VIGILANCIA O CONTROL FRONTERIZO, AEREO. COSTERO Y PORTUARIO."
+                            },
+                            {
+                                "code": "801001",
+                                "name": "ENSEÑANZA PREESCOLAR Y PRIMARIA PRIVADA",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ESCUELAS PRIVADAS DE ENSEÑANZA PREESCOLAR Y PRIVADA"
+                            },
+                            {
+                                "code": "801002",
+                                "name": "ENSENANZA PREESCOLAR Y PRIMARIA PRIVADA NO AUTORIZADOS POR EL MEP.",
+                                "description": "ENSENANZA PREESCOLAR Y PRIMARIA PRIVADA NO AUTORIZADOS POR EL MEP."
+                            },
+                            {
+                                "code": "802101",
+                                "name": "ENSEÑANZA SECUNDARIA PRIVADA",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ENSEÑANZA SECUNDARIA PRIVADA DE FORMACION GENERAL."
+                            },
+                            {
+                                "code": "802102",
+                                "name": "ENSENANZA SECUNDARIA PRIVADA NO AUTORIZADA POR EL MEP.",
+                                "description": "ENSENANZA SECUNDARIA PRIVADA NO AUTORIZADA POR EL MEP."
+                            },
+                            {
+                                "code": "802201",
+                                "name": "ENSENANZA DE FORMACION TECNICA Y PARAUNIVERSITARIA",
+                                "description": "EN ESTA CLASE SE INCLUYE TODA LA ENSENANZA TECNICA Y PROFESIONAL DE NIVEL INFERIOR AL UNIVERSITARIO. POR LO GENERAL EN LOS PROGRAMAS DE ESTE NIVEL SE HACE HINCAPIE EN UNA DETERMINADA ESPECIALIZACION Y SE IMPARTEN CONOCIMIENTOS TEORICOS Y PRACTICOS QUE SUELEN TENER POR OBJETO MEJORAR LAS POSIBILIDADES ACTUALES O FUTURAS DE EMPLEO. LOS OBJETIVOS DE LOS PROGRAMAS PUEDEN VARIAR DESDE LA PREPARACION PARA UNA ESFERA GENERAL DE EMPLEO HASTA LA PREPARACION PARA UNA OCUPACION CONCRETA. EN ESTE NIVEL TAMBIEN SE INCLUYE LA ENSENANZA TECNICA Y PROFESIONAL DE TIPO ACADEMICO PARA ESTUDIANTES INCAPACITADOS."
+                            },
+                            {
+                                "code": "802202",
+                                "name": "ENSENANZA SECUNDARIA DE FORMACION TECNICA Y PROFESIONAL NO AUTORIZADA POR EL MEP.",
+                                "description": "ENSENANZA SECUNDARIA DE FORMACION TECNICA Y PROFESIONAL NO AUTORIZADA POR EL MEP."
+                            },
+                            {
+                                "code": "803002",
+                                "name": "ENSEÑANZA SUPERIOR PRIVADA (UNIVERSIDADES)",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS UNIVERSIDADES PRIVADAS"
+                            },
+                            {
+                                "code": "803003",
+                                "name": "ENSENANZA SUPERIOR PUBLICA (UNIVERSIDADES)",
+                                "description": "ESTA CLASE COMPRENDE LA ENSENANZA UNIVERSITARIA PROPIAMENTE DICHA, QUE CULMINA EN LA OBTENCION DE UN TITULO UNIVERSITARIO O SU EQUIVALENTE. EN ESTE NIVEL SE OFRECE GRAN VARIEDAD DE PROGRAMAS ESPECIALIZADOS EN DIFERENTES DISCIPLINAS, ALGUNOS DE LOS CUALES SE CONCENTRAN EN CONOCIMIENTOS TEORICOS, MIENTRAS QUE OTROS HACEN HINCAPIE EN LOS CONOCIMIENTOS PRACTICOS."
+                            },
+                            {
+                                "code": "809001",
+                                "name": "ESCUELAS COMERCIALES (NO ESTATALES)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA ENSEÑANZA DE ACTIVIDADES NO ABARCADAS POR LOS SISTEMAS ORDINARIOS DE ENSEÑANZA PRIMARIA, SECUNDARIA O UNIVERSITARIA. EJEMPLO: ESCUELAS DE MANEJO, MUSICA, ACADEMIAS DE BELLEZA, INSTITUTOS DE IDIOMAS, ETC."
+                            },
+                            {
+                                "code": "809004",
+                                "name": "PROFESOR POR CUENTA PROPIA",
+                                "description": "INCLUYE LOS PROFESORES DE TODO TIPO DE ENSEÑANZA PRIMARIA, SECUNDARIA, UNIVERSITARIA, ENTRE OTROS. INCLUYE ADEMAS LA INSTRUCCION IMPARTIDA MEDIANTE PROGRAMAS DE TELEVISION, RADIO Y CORRESPONDENCIA, ASI COMO CUALQUIER OTRA ACTIVIDAD RELACIONADA COMO EL CUIDO DE EXAMENES ENTRE OTRAS."
+                            },
+                            {
+                                "code": "809005",
+                                "name": "ENSEÑANZA CULTURAL",
+                                "description": "EN ESTA CLASE COMPRENDE LAS ACTVIDADES DE FORMACION ARTISTICA, TEATRAL Y MUSICAL. LAS UNIDADES QUE IMPARTEN ESTE TIPO DE FORMACION PUEDEN DENOMINARSE ESCUELAS, ESTUDIOS, ACADEMIAS, CLASES, ETC. OFRECEN FORMACION ESTRUCTURADA, PRINCIPALMENTE PARA FINES RECREATIVOS, DE AFICION O DE DESARROLLO PERSONAL, PERO ESA FORMACION NO CONDUCE A LA OBTENCION DE UN DIPLOMA PROFESIONAL NI DE UN TITULO DE LICENCIADO O GRADUADO. INCLUYE: CLASES DE PIANO Y OTRAS ACTIVIDADES DE FORMACION MUSICAL. FORMACION ARTISTICA. ESCUELAS Y ACADEMIAS DE BAILE. ESCUELAS DE TEATRO, BELLAS ARTES,ARTES INTERPRETATIVAS,FOTOGRAFIA (EXCEPTO LAS ACADEMICAS)"
+                            },
+                            {
+                                "code": "809006",
+                                "name": "ENSEÑANZA DE LA DE SEGURIDAD PRIVADA",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ACADEMIAS O ESCUELAS DONDE CAPACITEN A PERSONAS PARA BRINDAR EL SERVICIO DE SEGURIDAD PRIVADA. DICHO SERVICIO, SE ENCUENTRA EN EL CODIGO 749201."
+                            },
+                            {
+                                "code": "809007",
+                                "name": "ESCUELA Y AGENCIA DE MODELOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ESCUELAS DE MODELAJE Y EL SERVICIO DE COLOCACION DE LOS MODELOS."
+                            },
+                            {
+                                "code": "851101",
+                                "name": "ACTIVIDADES DE HOSPITALES",
+                                "description": "SE REFIERE A LAS ACTIVIDADES DE CONSULTA MEDICA PRIVADA, QUE REALIZA TANTO UNA CLINICA, HOSPITAL O CENTRO MEDICO."
+                            },
+                            {
+                                "code": "851201",
+                                "name": "GINECOLOGO",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS POR GINECOLOGOS"
+                            },
+                            {
+                                "code": "851202",
+                                "name": "SERVICIOS DE MEDICO GENERAL",
+                                "description": "ESTA CLASE ABARCA LAS ACTIVIDADES DE CONSULTA Y TRATAMIENTO POR MEDICOS DE MEDICINA GENERAL, COMPRENDE LAS ACTIVIDADES DE DICHOS PROFESIONALES EN INSTITUCIONES DE ATENCION DE LA SALUD (ENTRE ELLAS LAS CLINICAS Y LOS SERVICIOS DE HOSPITAL PARA PACIENTES EXTERNOS Y LAS SOCIEDADES INTEGRADAS POR GRUPOS DE MEDICOS CUYOS SERVICIOS DEBEN PAGARSE POR ADELANTADO) Y EN CONSULTORIOS PRIVADOS. SE INCLUYEN ADEMAS LAS ACTIVIDADES REALIZADAS EN CLINICAS DE EMPRESAS, ESCUELAS, HOGARES DE ANCIANOS, ORGANIZACIONES SINDICALES Y ASOCIACIONES PROFESIONALES, ASI COMO EN EL DOMICILIO DE LOS PACIENTES."
+                            },
+                            {
+                                "code": "851203",
+                                "name": "NEUROLOGOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS POR NEUROLOGOS"
+                            },
+                            {
+                                "code": "851204",
+                                "name": "SERVICIOS DE OFTALMOLOGO U OCULISTA, OPTOMETRISTA Y/O OPTICO",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS POR OFTALMOLOGOS U OCULISTAS, OPTOMETRISTAS Y/O OPTICOS (CONSULTA PRIVADA). INCLUYE LOS EXAMENES PARA LA VISTA Y OTROS SERVICIOS RELACIONADOS. LAS OPTICAS SE INCLUYEN EN EL CODIGO 523920."
+                            },
+                            {
+                                "code": "851206",
+                                "name": "ORTOPEDISTA (CONSULTA PRIVADA)",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS POR ORTOPEDISTAS"
+                            },
+                            {
+                                "code": "851207",
+                                "name": "SERVICIOS DE ODONTOLOGO Y CONEXOS",
+                                "description": "ESTA CLASE INCLUYE LOS SERVICIOS PROFESIONALES EN ODONTOLOGIA, ORTODONCIA Y OTROS. INCLUYE ADEMAS LOS TECNICOS DENTALES Y PUEDE LLEVARSE A ACABO EN CONSULTORIOS PRIVADOS, CLINICAS, ESCUELAS Y EMPRESAS."
+                            },
+                            {
+                                "code": "851208",
+                                "name": "OTORRINOLARINGOLOGIA, AUDIOLOGIA Y SERVICIOS CONEXOS.",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS TECNICOS Y PROFESIONALES EN EL AREA DE OTORRINOLARINGOLOGIA, AUDIOLOGIA Y SERVICIOS RELACIONADOS."
+                            },
+                            {
+                                "code": "851209",
+                                "name": "FARMACEUTICO O BOTICARIO",
+                                "description": "ESTA CLASE INCLUYE AL PROFESIONAL DE LA SALUD EXPERTO EN MEDICINAS Y FARMACOS, Y EN LA UTILIZACION DE LOS MEDICAMENTOS CON FINES TERAPEUTICOS EN EL SER HUMANO. EL COMETIDO DEL FARMACEUTICO PUEDE SER REGENTAR UNA OFICINA DE FARMACIA, TRABAJAR EN UN HOSPITAL, INVESTIGAR Y DESARROLLAR NUEVOS FARMACOS, ETC."
+                            },
+                            {
+                                "code": "851210",
+                                "name": "CARDIOLOGOS",
+                                "description": "ESTA CLASE INCLUYE A LOS PROFESIONALES EN CIENCIAS MEDICAS QUE SE ESPECIALIZAN EN AFECCIONES A NIVEL CARDIACO Y DEL APARATO CIRCULATORIO."
+                            },
+                            {
+                                "code": "851212",
+                                "name": "ONCOLOGOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS POR PROFESIONALES MEDICOS EN ONCOLOGIA (CONSULTA PRIVADA)"
+                            },
+                            {
+                                "code": "851213",
+                                "name": "REUMATOLOGO",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS SERVICIOS BRINDADOS POR LOS MEDICOS REUMATOLOGOS."
+                            },
+                            {
+                                "code": "851901",
+                                "name": "MEDICINA ALTERNATIVA",
+                                "description": "EN ESTA CLASE SE INCLUYE CUALQUIER TIPO DE MEDICINA ALTERNATIVA QUE SE UTILIZA EN LUGAR DE LA MEDICINA CONVENCIONAL. POR EJEMPLO LA ACUPUNTURA, HIPNOSIS, YOGA, FITOTERAPIA (PLANTAS MEDICINALES), AROMATERAPIA, MUSICOTERAPIA, HOMEOPATIA, NATURISTAS, ETC."
+                            },
+                            {
+                                "code": "851902",
+                                "name": "FISIOTERAPEUTA",
+                                "description": "ESTA CLASE INCLUYE EL PROFESIONAL CAPACITADO Y AUTORIZADO PARA EVALUAR, EXAMINAR, DIAGNOSTICAR, Y TRATAR, LAS DEFICIENCIAS, LIMITACIONES FUNCIONALES Y DISCAPACIDADES FISICAS."
+                            },
+                            {
+                                "code": "851905",
+                                "name": "PSICOLOGO",
+                                "description": "ESTA CLASE INCLUYE LOS PROFESIONALES QUE ESTUDIAN LA CONDUCTA, EL COMPORTAMIENTO HUMANO Y LOS PROCESOS MENTALES."
+                            },
+                            {
+                                "code": "851906",
+                                "name": "PSIQUIATRIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS POR EL PROFESIONAL DE LA MEDICINA QUE SE DEDICA DE FORMA ESPECIALIZADA A IDENTIFICAR LAS ENFERMEDADES MENTALES DE LAS PERSONAS Y A DESARROLLAR UN TRATAMIENTOS QUE LAS SOLUCIONE."
+                            },
+                            {
+                                "code": "851907",
+                                "name": "SERVICIOS DE ENFERMERIA",
+                                "description": "ESTA CLASE INCLUYE A LOS PROFESIONEALES QUE SE ENCARGAN DE LOS CUIDADOS AUTONOMOS Y EN COLABORACION, QUE SE PRESTAN A LAS PERSONAS DE TODAS LAS EDADES, FAMILIAS, GRUPOS Y COMUNIDADES, ENFERMOS O SANOS, EN TODOS LOS CONTEXTOS, E INCLUYE LA PROMOCION DE LA SALUD, LA PREVENCION DE LA ENFERMEDAD, Y LOS CUIDADOS DE LOS ENFERMOS, DISCAPACITADOS, Y PERSONAS MORIBUNDAS"
+                            },
+                            {
+                                "code": "851908",
+                                "name": "LABORATORIOS MEDICOS - CLINICOS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LOS SERVICIOS DE LABORATORIOS MEDICOS Y CLINICOS QUE REALIZAN ANALISIS CLINICOS QUE CONTRIBUYEN AL ESTUDIO, PREVENCION, DIAGNOSTICO Y TRATAMIENTO DE LOS PROBLEMAS DE SALUD DE LOS PACIENTES. TAMBIEN SE LE CONOCE COMO LABORATORIOS DE PATOLOGIA CLINICA. REALIZAN ANALISIS CLINICO COMO HEMATOLOGIA, INMUNOLOGIA, MICROBIOLOGIA Y QUIMIA CLINICA (O BIOQUIMICA)"
+                            },
+                            {
+                                "code": "851909",
+                                "name": "SERVICIOS DE RADIOLOGIA, ANESTESIOLOGIA Y OTROS",
+                                "description": "ESTA CLASE INCLUYE LOS SERVICIOS BRINDADOS POR PERSONAS FISICAS O JURIDICAS EN EL AREA DE RADIOLOGIA, ANESTESIOLOGIA, MICROBIOLOGIA Y OTROS N.C.P."
+                            },
+                            {
+                                "code": "851910",
+                                "name": "TRANSPORTE EN AMBULANCIA TERRESTRE Y AEREO (SERVICIO PRIVADO)",
+                                "description": "ESTA CLASE INCLUYE LOS SERVICIOS DE AMBULANCIA PRIVADOS TERRESTRES Y AEREOS."
+                            },
+                            {
+                                "code": "851911",
+                                "name": "PROFESIONALES EN SALUD OCUPACIONAL",
+                                "description": "ESTA CLASE INCLUYE A TODO TIPO DE PROFESIONALES INCLUSIVE AUDITORES, INSPECTORESQUE PRESTEN LOS SERVICIOS PREVENTIVOS, ASESORAMIENTO DEL EMPLEADOR, TRABAJADOR Y SUS REPRESENTANTES SOBRE LOS REQUISITOS NECESARIOS PARA ESTABLECER Y CONSERVAR UN MEDIOAMBIENTE DE TRABAJO SEGURO Y SALUDABLE, QUE FAVOREZCA UNA SALUD FISICA Y MENTAL OPTIMA EN RELACION CON EL TRABAJO Y DE LA ADAPTACION DE ESTE A LAS CAPACIDADES DE LOS TRABAJADORES, TENIENDO EN CUENTA SU ESTADO DE SALUD FISICA Y MENTAL"
+                            },
+                            {
+                                "code": "851912",
+                                "name": "NUTRICIONISTA",
+                                "description": "ESTA CLASE INCLUYE AL PROFESIONAL QUE JUNTO AL EQUIPO MEDICO COLABORA PARA PROVEER UN CUIDADO SEVERO AL PACIENTE PARA QUE MANTENGA SU ESTADO DE SALUD O LA PROMUEVA. ES EL QUE DISEÑA MENUS, ESTABLECE POLITICAS SEGURAS DE MANEJOS DE ALIMENTOS, PROVEE EDUCACION EN SALUD O ENFERMEDAD, SUPERVISA Y ADMINISTRA SERVICIOS DE ALIMENTOS Y NUTRICION, PARTICIPA EN PROCESOS DE INVESTIGACION PARA BRINDAR CUIDADO NUTRICIONAL ATEMPERADO A LAS REALIDADES DE CADA MOMENTO, ENTRE OTROS."
+                            },
+                            {
+                                "code": "851913",
+                                "name": "PROFESIONALES EN EDUCACION ESPECIAL",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS PROFESIONALES DE ENSEÑANZA ESPECIAL TALES COMO PSICOPEDAGOGOS, FONOAUDIOLOGOS (TERAPIA DE LENGUAJE), TRABAJADORES SOCIALES, ETC."
+                            },
+                            {
+                                "code": "851914",
+                                "name": "SERVICIOS DE PARAMEDICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS RELACIONADOS CON LA ATENCION DE EMERGENCIAS MEDICAS, ATIENDE TRAUMAS EN EL AMBIENTE PREHOSPITALARIO SIGUIENDO PROTOCOLOS INTERNACIONAMENTE REVISADOS Y ACEPTADOS."
+                            },
+                            {
+                                "code": "851915",
+                                "name": "SERVICIOS DE ESTERILIZACION DE PRODUCTOS MEDICOS Y FARMACEUTICOS",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE ESTERILIZACION DE TODO TIPO DE PRODUCTOS, POR EL METODO DE CONTROL DEL CRECIMIENTO MICROBIANO QUE INVOLUCRA LA ELIMINACION DE TODAS LAS FORMAS DE VIDA MICROSCOPICAS, INCLUIDOS VIRUS Y ESPORAS ."
+                            },
+                            {
+                                "code": "851916",
+                                "name": "OTRAS ACTIVIDADES RELACIONADAS CON LA SALUD HUMANA(BANCO DE SANGRE, BANCO DE PIEL, ETC)",
+                                "description": "INCLUYASE LAS ACTIVIDADES DEL BANCO DE SANGRE Y DEL BANCO DE PIEL, PARA TRANSPLANTES O INJERTOS. PROCESAMIENTO, ALMACENAMIENTO, CONSERVACION Y DISTRIBUCION PARA EL TRATAMIENTO DE PACIENTES."
+                            },
+                            {
+                                "code": "851917",
+                                "name": "CIRUJANO PLASTICO.",
+                                "description": "CIRUJANO PLASTICO."
+                            },
+                            {
+                                "code": "852001",
+                                "name": "SERVICIOS VETERINARIOS CON VENTA DE PRODUCTOS GRAVADOS CON VENTAS",
+                                "description": "SE REFIERE A LAS VETERINARIAS QUE PRESTAN SERVICIOS DE ATENCION MEDICA Y A LA VEZ VENDEN ARTICULOS PARA MASCOTAS, ALIMENTOS, ETC. GRAVADOS CON EL IMPUESTO SOBRE LAS VENTAS."
+                            },
+                            {
+                                "code": "852002",
+                                "name": "SERVICIOS MEDICOS VETERINARIOS",
+                                "description": "SE REFIERE A LAS ACTIVIDADES DE ATENCION MEDICA PARA ANIMALES, EN CLINICAS Y HOSPITALES ESPECIALIZADOS, O POR UN PROFESIONAL EN EL CAMPO. Y QUE NO VENDEN ARTICULOS GRAVADOS."
+                            },
+                            {
+                                "code": "853101",
+                                "name": "FUNDACIONES DE SERVICIO SOCIAL SIN ALOJAMIENTO",
+                                "description": "EN ESTA CLASE SE INCLUYE FUNDACIONES DE BIEN SOCIAL CON ALOJAMIENTO Y SIN ALOJAMIENTO."
+                            },
+                            {
+                                "code": "853102",
+                                "name": "FUNDACIONES DE SERVICIO SOCIAL CON ALOJAMIENTO",
+                                "description": "ESTA CLASE COMPRENDE LAS ACTIVIDADES DESTINADAS A PROPORCIONAR ASISTENCIA SOCIALO SERVICIOS SOCIALES CON ALOJAMIENTO, REALIZADAS POR DEPENDENCIAS PUBLICAS O PRIVADAS."
+                            },
+                            {
+                                "code": "853103",
+                                "name": "RESIDENCIAS UNIVERSITARIAS CON SERVICIOS INTEGRADOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS RESIDENCIAS PARA ESTUDIANTES UNIVERSITARIOS, EN DONDE SE LES BRINDA SERVICIOS DE HOSPEDAJE, LAVADO, PLANCHADO E INSTALACIONES COMO LABORATORIOS, AULAS, ETC. DICHO SERVICIO NO ESTA SUJETO AL IMPUESTO SOBRE LAS VENTAS SEGUN OFICIO DN-198-06 DEL 07 DE JULIO DEL 2006, DE LA DIVISION NORMATIVA."
+                            },
+                            {
+                                "code": "853201",
+                                "name": "GUARDERIAS/CENTROS INFANTILES Y SERVICIOS SOCIALES",
+                                "description": "ESTA ACTIVIDAD ABARCA SERVICIOS DE GUARDERIAS, ACTIVIDADES DE ATENCION Y CUIDO DE PERSONAS INCAPACITADAS, ORIENTACION DE NIÑOS, ADOPCION, ASISTENCIA SOCIAL, PERSONAS CON DERECHO A RECIBIR, FONDOS, ASESORAMIENTO SOBRE EL PRESUPUESTO FAMILIAR Y ORIENTACION ACERCA DEL MATRIMONIO Y LA FAMILIA ENTRE OTROS QUE PUEDEN SER PRESTADOS A PARTICULARES Y A FAMILIAS EN SUS HOGARES Y EN OTROS LUGARES. ESTA ACTIVIDAD PUEDE SER REALIZADA POR DEPENDENCIAS PUBLICAS Y POR ORGANIZACIONES PRIVADAS (INCLUYE PERSONAS FISICAS), ORGANIZACIONES DE BIENESTAR SOCIAL RELACIONADAS CON IGLESIAS, ORGANIZACIONES PARA SOCORRO EN CASOS DE DESASTRE Y ORGANIZACIONES NACIONALES O LOCALES DE AUTOAYUDA. INCLUYE LA RED NACIONAL DE CUIDO Y DESARROLLO INFANTIL."
+                            },
+                            {
+                                "code": "853301",
+                                "name": "ASOCIACIONES DECLARADAS DE UTILIDAD PUBLICA POR EL PODER EJECUTIVO",
+                                "description": "ESTA CLASE INCLUYE LAS ASOCIACIONES DECLARADAS DE UTILIDAD PUBLICA DE TODO TIPO Y LAS CUALES SE DEBEN INSCRIBIR COMO DECLARANTES. (ENTRE ELLAS LAS ASADAS)."
+                            },
+                            {
+                                "code": "900001",
+                                "name": "ASESORAMIENTO Y ELIMINACION DE DESPERDICIOS, SANEAMIENTO (EXCEPTO LIMPIEZA DE TANQUES SEPTICOS)",
+                                "description": "EN ESTA CLASE SE INCLUYEN LA RECOLECCION DE BASURA, DESPERDICIOS, TRASTOS Y DESECHOS PROVENIENTES DE HOGARES Y DE UNIDADES INDUSTRIALES Y COMERCIALES, ASI COMO SU TRANSPORTE Y ELIMINACION MEDIANTE INCINERACION Y OTROS METODOS, REDUCCION DE DESECHOS, LA RECOLECCION DE CENIZAS, RECOLECCION DE DESPERDICIOS UTILIZANDO RECIPIENTES COLOCADOS EN LUGARES PUBLICOS, LA REMOCION DE ESCOMBROS, LA DESCARGA DE DESPERDICIOS EN TIERRA FIRME Y EN EL MAR, EL ENTERRAMIENTO Y CUBRIMIENTO DE DESPERDICIOS. LA LIMPIEZA DE TANQUES SEPTICOS Y AGUAS RESIDUALES SE ENCUENTRA BAJO EL CODIGO 900002."
+                            },
+                            {
+                                "code": "900002",
+                                "name": "LIMPIEZA DE TANQUES SEPTICOS Y AGUAS REDISUALES",
+                                "description": "EN ESTA CLASE SE INCLUYE LA LIMPIEZA DE TANQUES SEPTICOS, RESIDENCIALES, COMERCIALES O INDUSTRIALES, LA EVACUACION POR CLOACAS, ALCANTARILLAS Y OTROS MEDIOS DE EXCREMENTOS HUMANOS, SU TRATAMIENTO Y ELIMINACION, ASI COMO LAS ACTIVIDADES DE MANTENIMIENTO DE LOS MISMOS."
+                            },
+                            {
+                                "code": "911101",
+                                "name": "ACTIVIDADES DE ORGANIZACIONES EMPRESARIALES Y DE EMPLEADORES",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES DE ORGANIZACIONES CUYOS MIEMBROS SE ITERESAN PRINCIPALMENTE EN EL DESARROLLO Y LA PROSPERIDAD DE UN DETERMINADO RAMO DE ACTIVIDAD EMPRESARIAL O COMERCIAL, INCLUSO EL CONCERNIENTE AL SECTOR AGROPECARIO, O EN LA SITUACION Y EL CRECIMIENTO ECONOMICOS DE UNA DETERMINADA ZONA GEORAFICA O SUBDIVISION POLITICA, INDEPENDIENTEMENTE DEL RAMO DE ACTIVIDAD. SE INCUYEN LAS ACTIVIDADES DE FEDERACIONES DE ASOCIACIONES CUYOS MIEMBROS COMPARTEN UN MISMO RAMO DE ACTIVIDAD Y DE LAS FEDERACIONES DE ASOCIACIONES BASADAS EN CRITERIOS TERRITORIALES CUYO FIN ES AMPLIAR SU ALCANCE GEOGRAFICO. LOS PRINCIPALES SEVICIOS PRESTADOS CONSISTEN EN LA DIFUSION DE INFORMACION, LA REPRESENTACION ANTE ORGANISMOS PUBLICOS, LAS RELACIONES PUBLICAS Y LA PARTICIPACION EN NEGOCIACIONES"
+                            },
+                            {
+                                "code": "911102",
+                                "name": "CAMARAS DE COMERCIO",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES DE CAMARAS DE COMERCIO, GREMIOS Y O RGANIZACIONES SIMILARES. TODAS AQUELLAS QUE APORTEN LA DECLARACTORIA DE UTILIDAD PUBLICA DEBERAN QUEDAR REGISTADAS COMO DECLARANTES DEL IMPUESTO GENERAL DE LA RENTA."
+                            },
+                            {
+                                "code": "911201",
+                                "name": "ACTIVIDADES DE ORGANIZACIONES PROFESIONALES",
+                                "description": "ESTA CLASE ABARCA LAS ACTIVIDADES DE ORGANIZACIONES CUYOS MIEMBROS SE INTERESAN PRINCIPALMENTE EN UNA DISCIPLINA CIENTIFICA (ASOCIACIONES CIENTIFICAS), PRACTICA PROFESIONAL O ESFERA TECNICA CONCRETA. SE INCLUYEN LAS ACTIVIDADES DE ASOCIACIONES DE ESPECIALISTAS EN EL CAMPO CULTURAL, COMO ESCRITORES, PINTORES, ARTISTAS, PERIODISTAS, ETC. (COLEGIOS PROFESIONALES)"
+                            },
+                            {
+                                "code": "912001",
+                                "name": "ASOCIACIONES SOLIDARISTAS",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ASOCIACIONES SOLIDARISTAS"
+                            },
+                            {
+                                "code": "912002",
+                                "name": "ACTIVIDADES DE SINDICATOS",
+                                "description": "ESTA CLASE COMPRENDE LAS ACTIVIDADES DE ASOCIACIONES CUYOS AFILIADOS EN SU MAYORIA SON EMPLEADOS INTERESADOS PRINCIPALMENTE EN DAR A CONOCER SUS OPINIONES SOBRE LA SITUACION LABORAL Y EN TOMAR MEDIDAS CONCERTADAS POR CONDUCTO DE SU ORGANIZACION. SE INCLUYEN LAS ACTIVIDADES DE SINDICATOS DE PROFESIONALES, TECNICOS, TRABAJADORES EN LA ESFERA CULTURAL Y TRABAJADORES RURALES, ASI COMO DE FUNCIONARIOS PUBLICOS, Y LAS ACTIVIDADES DE SINDICATOS DE EMPRESAS, SINDICATOS CON FILIALES Y ORGANIZACIONES LABORALES COMPUESTAS DE SINDICATOS AFILIADOS Y CONSTITUIDAS EN FUNCION DEL OFICIO DE SUS MIEMBROS O EN FUNCION DE CRITERIOS GEOGRAFICOS, ESTRUCTURALES O DE OTRA INDOLE. SE DEBE INSCRIBIR COMO DECLARANTE DEL IMPUESTO SOBRE LA RENTA DE CONFORMIDAD CON EL ARTICULO 3 DE LA LEY DEL IMPUESTO SOBRE LA RENTA Y 6 DEL REGLAMENTO."
+                            },
+                            {
+                                "code": "919101",
+                                "name": "ACTIVIDADES DE ORGANIZACIONES RELIGIOSAS",
+                                "description": "ESTA CLASE SE REFIERE A LAS ACTIVIDADES DE ORGANIZACIONES RELIGIOSAS."
+                            },
+                            {
+                                "code": "919902",
+                                "name": "ASOCIACIONES DE CLUBES SOCIALES",
+                                "description": "ESTA CLASE INCLUYE LAS ACTIVIDADES REALIZADAS POR ASOCIACIONES DE CLUBES SOCIALES, TALES COMO DE LEONES, UNIVERSITARIOS, ACTIVOS 20-30, GRUPOS ETNICOS, DE HISTORIA, DE PROPIETARIOS DE AUTOMOVILES, ETC."
+                            },
+                            {
+                                "code": "919905",
+                                "name": "ASOCIACION PROAYUDA A PERSONAS ADICTAS A DROGAS E INDIGENTES",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS ASOCIACIONES PROAYUDA A NIÑOS Y ADULTOS, ADICTOS A DROGAS O PERSONAS EN CONDICION INDIGENTE."
+                            },
+                            {
+                                "code": "921101",
+                                "name": "ACTIVIDADES PRODUCCION POSTPRODUCCION Y DISTRIBUCION DE PELICULAS CINEMATOGRAFICAS (VIDEOS)",
+                                "description": "PRODUCCION Y POSPRODUCCION DE AUDIOVISUALES, DOCUMENTALES, CORTOS PUBLICITARIOS (ANUNCIOS), PELICULAS DE FICCION, CORTOMETRAJES, LARGOMETRAJES, DIBUJOS ANIMADOS"
+                            },
+                            {
+                                "code": "921201",
+                                "name": "EXHIBICION DE FILMES Y VIDEOCINTAS (SALAS DE CINE)",
+                                "description": "ESTA CLASE COMPRENDE LA EXHIBICION DE FILMES Y VIDEOCINTAS EN CINEMATOGRAFOS Y AL AIRE LIBRE Y EN SALAS PRIVADAS Y OTROS LOCALES DE EXHIBICION. ESTA ACTIVIDAD ESTA SUJETA AL IMPUESTO DE VENTAS CONFORME A LA LEY GENERAL DEL IMPUESTO SOBRE LAS VENTAS ARTICULO 1 INCISO K)."
+                            },
+                            {
+                                "code": "921301",
+                                "name": "TRANSMISIONES DE RADIO",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS A TRAVES DE LA RADIO, LOS CUALES SE ENCUENTRAN AFECTOS UNICAMENTE AL IMPUESTO SOBRE LA RENTA, SEGUN EL ARTICULO PRIMERO, INCISO L) PARRAFO SEGUNDO DE LA LEY DEL IMPUESTO SOBRE LAS VENTAS Y ASI RATIFICADO MEDIANTE OFICIO 001181 DEL 28 DE OCTUBRE DE 1993 DE LA DIRECCION GENERAL DE TRIBUTACION."
+                            },
+                            {
+                                "code": "921302",
+                                "name": "PROGRAMACION Y TRANSMISIONES DE TELEVISION",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS DE PRODUCCION EN VIVO O EN CINTA U OTRO MATERIAL DE GRABACION DE PROGRAMAS DE RADIO Y TELEVISION PARA SU DIFUSION SIMULTANEA O POSTERIOR."
+                            },
+                            {
+                                "code": "921303",
+                                "name": "TRANSMISIONES DE RADIO CULTURALES SEGUN LEY GENERAL DE TELECOMUNICACIONES.",
+                                "description": "TRANSMISIONES DE RADIO CULTURALES SEGUN LEY GENERAL DE TELECOMUNICACIONES."
+                            },
+                            {
+                                "code": "921401",
+                                "name": "TEATROS (EXPLOTACION)",
+                                "description": "INCLUYASE EN ESTA ACTIVIDAD CUALQUIER TIPO DE ESPECTACULO PUBLICO QUE SE REALICE DENTRO DE LAS INSTALACIONES DE UN TEATRO. (EXENTOS DE VENTAS DE ACUERDO AL FALLO 177/95 DEL TRIBUNAL FISCAL ADMINISTRATIVO Y LEY GENERAL DEL IMPUESTO SOBRE LAS VENTAS ARTICULO 1 INCISO K)."
+                            },
+                            {
+                                "code": "921402",
+                                "name": "ACTIVIDADES MUSICALES Y ARTISTICAS (SERVICIOS)",
+                                "description": "INCLUYASE EN ESTA CLASE, CONJUNTOS MUSICALES, CANTANTES, TRIOS, MARIACHIS, CIMARRONAS, MARIMBAS, DUOS, GUITARRISTAS, GRUPOS DE TEATRO, ACTORES, CUENTACUENTOS, GRUPOS FOLKLORICOS, MASCARADAS, MIMOS, PAYASOS, COMPARSAS, BANDAS, MUSICOS, INCLUSO ESCRITORES, COMPOSITORES, ANIMADORES DE EVENTOS, ESCULTORES,ETC. SIEMPRE Y CUANDO ESTOS SERVICIOS SEAN PRESTADOS DE FORMA INDEPENDIENTE Y QUE NO SEAN PARTE DE UN ESPECTACULO DONDE SE ESTE COBRANDO EL DERECHO DE INGRESO (ENTRADA); ESTE TIPO DE SERVICIO, SE ENCUENTRA EN EL CODIGO 924908, LA EXPLOTACION DE CINES EN EL CODIGO 921201 Y LA DE TEATROS EN EL 921401."
+                            },
+                            {
+                                "code": "921403",
+                                "name": "PERIODISTA POR CUENTA PROPIA",
+                                "description": "ESTA CLASE INCLUYE LAS PERSONAS QUE SE DEDICAN PROFESIONALMENTE AL PERIODISMO, EN CUALQUIERA DE SUS FORMAS, YA SEA EN LA PRENSA ESCRITA, RADIO, TELEVISION O MEDIOS DIGITALES. A CAMBIO DE UNA RETRIBUCION O POR CONTRATA"
+                            },
+                            {
+                                "code": "921501",
+                                "name": "CANALES DE TELEVISION",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS CANALES DE TELEVISION"
+                            },
+                            {
+                                "code": "921902",
+                                "name": "VENTA AL POR MENOR DE DISCOS, GRABACIONES DE MUSICA Y DE VIDEO",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS TIENDAS DE VENTA DE DISCOS, CASETTES, ETC."
+                            },
+                            {
+                                "code": "921903",
+                                "name": "SALON DE BAILE Y DISCOTECA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SALONES DE BAILE Y DISCOTECAS"
+                            },
+                            {
+                                "code": "921904",
+                                "name": "SALON DE PATINES",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SALONES DE ESPARCIMIENTO ADECUADOS PARA LA PRACTICA DEL PATINAJE."
+                            },
+                            {
+                                "code": "922001",
+                                "name": "ACTIVIDADES DE AGENCIAS DE NOTICIAS",
+                                "description": "ESTA CLASE ABARCA LAS ACTIVIDADES DE CONSORCIOS Y AGENCIAS DE NOTICIAS QUE PROPORCIONAN MATERIAL NOTICIERO, FOTOGRAFICO Y PERIODISTICO A LOS MEDIOS DE DIFUSION Y SERVICIOS DE NOTICIAS A PERIODICOS, REVISTAS Y ESTACIONES DE RADIO Y TELEVISION."
+                            },
+                            {
+                                "code": "923101",
+                                "name": "ACTIVIDADES DE BIBLIOTECAS Y ARCHIVOS",
+                                "description": "ESTA CLASE INCLUYE LAS ACTIVIDADES DE DOCUMENTACION E INFORMACION REALIZADAS POR BIBLIOTECAS DE TODO TIPO, SALAS DE LECTURA, AUDICION Y PROYECCION ARCHIVOS AL PUBLICO EN GENERAL O A DETERMINADAS CATEGORIAS DE PERSONAS, COMO ESTUDIANTES, CIENTIFICOS, EMPLEADOS DE LA ORGANIZACION A LA QUE PERTENECE LA BIBLIOTECA Y GESTION DE ARCHIVOS DE LA ADMINISTRACION PUBLICA: ORGANIZACION DE FONDOS BIBLIOGRAFICOS, CATALOGACION DE LOS FONDOS, MANTENIMIENTO Y PRESTAMO DE LIBROS, MAPAS, REVISTAS, PELICULAS, DISCOS, CINTAS GRABADAS, OBRAS DE ARTE, ETC. ACTVIDADES DE BUSQUEDA PARA ATENDER A SOLICITUDES DE INFORMACION, ETC. SERVICIOS DE ARCHIVOS FOTOGRAFICOS Y BANCOS DE IMAGENES."
+                            },
+                            {
+                                "code": "923201",
+                                "name": "GALERIAS DE ARTE",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS GALERIAS DE ARTE, EXCLUYENDO EL COMERCIO EXCLUSIVO DE OBRAS"
+                            },
+                            {
+                                "code": "923202",
+                                "name": "SERVICIOS DE RESTAURACION DE OBRAS DE ARTE",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE RESTAURACION Y/O MANTENIMIENTO DE OBRAS DE ARTE, PRESTADAS POR PERSONAS FISICAS A CAMBIO DE UNA RETRIBUCION ECONOMICA."
+                            },
+                            {
+                                "code": "923301",
+                                "name": "ACTIVIDADES DE JARDINES BOTANICOS, ZOOLOGICOS, PARQUES NACIONALES Y RESERVAS NACIONALES",
+                                "description": "SN ESTA CLASE SE INCLUYE LA EXPLOTACION DE LAS ACTIVIDADES DE JARDINES BOTANICOS(PLANTAS ORMANENTALES, ORQUIDEAS, ETC.), JARDINES ZOOLOGICOS (ACUARIOS, RANAS, SERPENTARIOS, MARIPOSARIOS, AVIARIOS, ETC.). PARQUES NACIONALES, RESERVAS BIOLOGICAS DE CARACTER PUBLICO O PRIVADO. ADEMAS, INCLUYE LA PRESERVACION DE LA FLORAY FAUNA SILVESTRES, ASI COMO TERRENOS PROTEGIDOS, ETC."
+                            },
+                            {
+                                "code": "924101",
+                                "name": "GIMNASIOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS PRESTADADOS POR LOS GIMNASIOS, ASI COMO SUS ACTIVIDADES CONEXAS (EQUIPO BIOMECANICO, PESAS, SALA DE AEROBICOS, PILATES, AEROBICOS, TAEBO, COMBO, BAILE, ZUMBA FITNESS, ETC, EQUIPO CARDIOVASCULAR, SPINNING) ENTRE OTROS"
+                            },
+                            {
+                                "code": "924102",
+                                "name": "EXPLOTACION DE PISCINAS O ALBERCAS DE BAÑO",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXPLOTACION DE PISCINAS"
+                            },
+                            {
+                                "code": "924103",
+                                "name": "ENTRENADOR, INSTRUCTORES Y/O PREPARADORES FISICOS POR CUENTA PROPIA",
+                                "description": "ESTA CLASE SE REFERIERE A ENTRENADORES, PREPARADORES FISICOS Y/O INSTRUCTORES DE TODO TIPO DE DEPORTES O ACTIVIDADES FISICAS ENCARGADA DE LA DIRECCION, INSTRUCCION Y ENTRENAMIENTO DE UN DEPORTISTA INDIVIDUAL O DE UN COLECTIVO"
+                            },
+                            {
+                                "code": "924104",
+                                "name": "ACTIVIDADES DE ESCUELAS Y CLUBES DEPORTIVOS",
+                                "description": "ESTA CLASE INCLUYE LAS ESCUELAS Y CLUBES DE TODO TIPO DE DEPORTE, POR EJEMPLO: FUTBOL, BOLOS, NATACION, GOLF, BOXEO, LUCHA, GIMNASIA, AJEDREZ, DOMINO, NAIPES, ATLETISMO, BUCEO, ETC"
+                            },
+                            {
+                                "code": "924105",
+                                "name": "EXPLOTACION DE INSTALACIONES Y CAMPOS DEPORTIVOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXPLOTACION DE LAS INSTALACIONES PARA PRACTICAR DEPORTES TALES COMO FUTBOL, BOLOS, NATACION, GOLF, BOXEO, LUCHA LIBRE, GIMNASIA,ATLETISMO, TIRO AL BLANCO, BEISBOL, BASQUETBOL, FUTBOL 5, Y OTROS TALES COMO CAMINATAS CON FINES DE ESPARCIMIENTO."
+                            },
+                            {
+                                "code": "924106",
+                                "name": "ACTIVIDADES DEPORTIVAS Y OTRAS POR CUENTA PROPIA",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS DEPORTISTAS POR CUENTA PROPIA QUE PERCIBEN RETRIBU-CION POR PARTE DE CLUBES, EMPRESAS U OTROS PATROCINADORES. SE INCLUYEN ADEMAS, LAS ACTIVIDADES RELACIONADAS CON LA PROMOCION Y PRODUCCION DE ESPECTACULOS DEPORTIVOS Y LAS QUE REALIZAN POR CUENTA PROPIA DEPORTISTAS, ATLETAS, JUECES, ARBITROSCRONOMETRADORES, INSTRUCTORES, Y ENTRENADORES ENTRE OTROS."
+                            },
+                            {
+                                "code": "924107",
+                                "name": "ESPECTACULOS DEPORTIVOS",
+                                "description": "ESTA CLASE INCLUYE LA ORGANIZACION Y DIRECCION DE TODO TIPO DE ACTIVIDADES DEPORTIVAS AL AIRE LIBRE Y BAJO TECHO, CON LA PARTICIPACION DE PROFESIONALES Y ESPECTADORES. (FUTBOL, BOLOS, NATACION, GOLF, BOXEO, LUCHA LIBRE, GIMNASIA, LEVANTAMIENTO DE PESAS (FISICULTURISMO), AJEDREZ, ATLETISMO, TIRO AL BLANCO, COMPETENCIAS DE CARROS, DE MOTOS (FREE STYLE Y SUPER CROSS). (EXENTOS DEL IMPUE STO GENERAL SOBRE LAS VENTAS DE ACUERDO A LA LEY GENERAL DEL IMPUESTO SOBRE LAS VENTAS ARTICULO 1 INCISO K)."
+                            },
+                            {
+                                "code": "924901",
+                                "name": "NIGHT CLUB/CABARETTE",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS CENTROS DE ENTRETENIMIENTO NOCTURNOS (NIGHT CLUB)"
+                            },
+                            {
+                                "code": "924902",
+                                "name": "EXPLOTACION DE CASINOS (INCLUYE MESAS DE JUEGOS Y MAQUINAS TRAGAMONEDAS)",
+                                "description": "EN ESTA CLASE SE INCLUYE LA EXPLOTACION DE CASINOS Y SALAS DE JUEGO. NO SE INCLUYEN LOS LUGARES O ESPACIOS DONDE EXCLUSIVAMENTE SE EXPLOTEN JUEGOS COMO POOL,BILLAR, DAMAS, AJEDREZ Y OTROS SIMILARES. LOS CUALES SE INCLUYEN EN LA CLASE 924904. LOS CASINOS Y SALAS DE JUEGO SE ENCUENTRAN AFECTOS AL IMPUESTO SOBRE LA RENTA Y AL IMPUESTO A LAS SALAS DE JUEGO Y LAS MISMAS SOLO PUEDEN ESTAR UBICADOS EN HOTELES DE 4 O MAS ESTRELLAS. EL IMPUESTO SOBRE LAS VENTAS CORRESPONDE AL SERVICIO DE BAR Y RESTAURANTE QUE ESTOS CENTROS DE DIVERSION BRINDAN. CUANDO ESTE EXISTA INCLUYASE COMO ACTIVIDAD SECUNDARIA."
+                            },
+                            {
+                                "code": "924903",
+                                "name": "PESCA DEPORTIVA",
+                                "description": "SE REFIERE A LA ASISTENCIA Y ORGANIZACION DE TOURS, ASI COMO ESTABLECIMIENTOS DEDICADOS A LA PESCA COMO ACTIVIDAD DE ESPARCIMIENTO."
+                            },
+                            {
+                                "code": "924904",
+                                "name": "ACTIVIDADES DE JUEGOS DE BILLAR, POOL Y OTROS SIMILARES",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS LUGARES O ESPACIOS DESTINADOS A LA EXPLOTACION EXCLUSIVA DE JUEGOS DE BILLAR, POOL, DAMAS, AJEDREZ Y OTROS SIMILARES."
+                            },
+                            {
+                                "code": "924905",
+                                "name": "SALA DE VIDEO JUEGOS",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS CENTROS DE ENTRETENIMIENTO CON MAQUINAS DE VIDEO JUEGOS."
+                            },
+                            {
+                                "code": "924906",
+                                "name": "GRABACION DE SONIDO (MUSICA, ETC.) EN DISCOS GRAMOFONICOS YEN CINTA MAGNETOFONICA",
+                                "description": "ESTA CLASE INCLUYE LA GRABACION DE SONIDO (MUSICA,ETC) EN DISCOS GRAMOFONICOS Y EN CINTA MAGNETOFONICA A CAMBIO DE UNA RETRIBUCION O POR CONTRATA."
+                            },
+                            {
+                                "code": "924907",
+                                "name": "SERVICIO DE ENLACE DE LLAMADAS Y CASAS DE APUESTAS ELECTRONICAS (SPORTBOOKS)",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO PRESTADO POR UN CENTRO DE LLAMADAS EXCLUSIVAMENTE PARA EL ENLACE DE APUESTAS ELECTRONICAS, TAMBIEN SE INCLUYEN LAS EMPRESAS DEDICADAS A LA RECEPCION Y EL PROCESAMIENTO DE DATOS QUE GENERAN LAS APUESTAS ELECTRONICAS, CONOCIDOS COMO SPORTBOOKS. EL SERVICIO DE UN CALL CENTER DE SERVICIO AL CLIENTE SE ENCUENTRA EN LA CLASE 749905"
+                            },
+                            {
+                                "code": "924908",
+                                "name": "ESPECTACULOS PUBLICOS EN GENERAL EXCEPTO LOS DEPORTIVOS Y EL TEATRO",
+                                "description": "INCLUYASE EN ESTA ACTIVIDAD CUALQUIER TIPO DE ESPECTACULO PUBLICO QUE SE REALICE EN INSTALACIONES TALES COMO GIMNASIOS, ESTADIOS, HOTELES, AREAS ABIERTAS, CAMPOS FERIALES (FERIAS), EXPOSICIONES NO GRATUITAS, ETC. LAS ENTRADAS O TODO DERECHO DE ACCESO A LOS ESPECTACULOS PUBLICOS SE ENCUENTRAN GRAVADOS CON EL IMPUESTO GENERAL SOBRE LAS VENTAS DE CONFORMIDAD CON EL ART 1 INC K DE LA LEY Y LA RESOLUCION DGT-08-2008 DEL 16-04-08. LAS PERSONAS FISICAS O JURIDICAS QUE ORGANIZAN ESTE TIPO DE EVENTOS SON CONTRIBUYENTES DE ESTE IMPUESTO. CUANDO LAS ACTIVIDADES ANTERIORES SON DESARROLLADAS DENTRO DE UN TEATRO, SE INCLUYEN EN EL CODIGO 921401; LOS ESPECTACULOS DEPORTIVOS SE INCLUYEN EN EL CODIGO 924107."
+                            },
+                            {
+                                "code": "924909",
+                                "name": "OTRAS ACTIVIDADES DE ESPARCIMIENTO",
+                                "description": "ESTA CLASE COMPRENDE TODAS LAS ACTIVIDADES DE ESPARCIMIENTO QUE NO ESTAN INCLUIDAS EN NINGUNA DE LAS DEMAS CLASES DE ESTA DIVISION. SE INCLUYEN, ENTRE OTRAS ACTIVIDADES, LAS DE CONTRATACION DE ACTORES Y ACTRICES PARA OBRAS CINEMATOGRAFICAS,DE TELEVISION Y DE TEATRO; PARQUES DE RECREO, PLAYAS (INCLUSO EL ALQUILER DE CASETAS, GUARDARROPAS, SILLAS) DE PESCA CON FINES DE ESPARCIMIENTO, DE INSTALACIONES DE TRANSPORTE PARA FINES RECREATIVOS, ETC."
+                            },
+                            {
+                                "code": "924910",
+                                "name": "EXPLOTACION DE JUEGOS DE AZAR NO ELECTRONICOS (INCLUYE MAQUINAS TRAGAMONEDAS REALIZADAS EN LUGARES DIFERENTES A CASINOS.)",
+                                "description": "EXPLOTACION DE JUEGOS DE AZAR NO ELECTRONICOS (INCLUYE MAQUINAS TRAGAMONEDAS."
+                            },
+                            {
+                                "code": "930101",
+                                "name": "SERVICIOS DE LAVANDERIA DE TODO TIPO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE LAVADO, LIMPIEZA, PLANCHADO DE TODO TIPO DE PRENDAS DE VESTIR Y OTROS ARTICULOS DE TELA QUE SE REALIZAN CON EQUIPO MECANICO, A MANO Y MAQUINAS ACCIONADAS CON MONEDAS PARA EL PUBLICO EN GENERAL, CLIENTES INDUSTRIALES Y COMERCIALES. TAMBIEN SE INCLUYE LA RECOLECCION Y DISTRIBUCION DE ROPA POR LAS LAVANDERIAS, ASI COMO EL LAVADO DE ALFOMBRAS, TAPICES, CORTINAS EN LOCALES O RESIDENCIAS. ASI COMO EL LAVADO POR CUENTA PROPIA O POR CONTRATO DE SERVILLETAS, TAPETES, UNIFORMES, MANTELERIA, CANASTAS, CESTAS Y CUALQUIER TIPO DE LAVADO A MANO O A MAQUINA."
+                            },
+                            {
+                                "code": "930102",
+                                "name": "SERVICIO DE TEÑIDO DE PRENDAS DE VESTIR",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE TEÑIDO DE PRENDAS DE VESTIR."
+                            },
+                            {
+                                "code": "930103",
+                                "name": "SERVICIO DE LIMPIEZA Y LAVADO DE MUEBLES",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE LAVADO Y LIMPIEZA DE MUEBLES, INDEPENDIENTEMENTE DEL LUGAR DONDE SE REALICE."
+                            },
+                            {
+                                "code": "930202",
+                                "name": "SALONES DE BELLEZA, PELUQUERIA Y BARBERIA",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES DE LAVADO, CORTE, PEINADO, TEÑIDO, COLORACION, ONDULACION Y ALISADO DEL CABELLO TANTO, PARA HOMBRES COMO PARA MUJERES. ADEMAS SE INCLUYE EL AFEITADO Y EL RECORTE DE LA BARBA, MASAJES FACIALES, ARREGLOS DE MANOS Y PIES, MAQUILALJE Y OTROS TRATAMIENTOS DE BELLEZA."
+                            },
+                            {
+                                "code": "930301",
+                                "name": "SERVICIOS FUNEBRES Y ACTIVIDADES CONEXAS",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES RELACIONADAS CON FUNERALES, POR EJEMPLO LOS SERVICIOS BRINDADOS POR LAS FUNERARIAS, LAS CUALES PUEDEN INCLUIR MERCANCIAS TALES COMO ARREGLOS FLORALES, VELAS, CAFE, COMO ALQUILER DE CARROZA, ETC. ASI MISMO SE INCLUYEN LOS SERVICIOS DE INCINERACION, CREMACION O EMBASAMIENTOS DE CADAVERES. IGUALMENTE SE INCLUYE LAS ACTIVIDADES DE PREPARACION DE LOS CUERPOS PARA SU INHUMACION O CREMACION."
+                            },
+                            {
+                                "code": "930302",
+                                "name": "CEMENTERIO PUBLICO (JUNTA ADMINISTRATIVA)",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS CEMENTERIOS PUBLICOS Y/O JUNTAS ADMINISTRATIVAS QUE ADMINISTRAN LOS MISMOS; LAS CUALES, POR SU NATURALEZA, SON DECLARANTES EN EL IMPUESTO SOBRE LA RENTA. PARA CEMENTERIOS PRIVADOS (CONTRIBUYENTES), VER LA ACTIVIDAD 930303."
+                            },
+                            {
+                                "code": "930303",
+                                "name": "CEMENTERIO O CAMPOSANTO PRIVADO",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS CEMENTERIOS O CAMPOSANTOS PRIVADOS LOS CUALES POR SU FIN DE LUCRO, SON CONTRIBUYENTES."
+                            },
+                            {
+                                "code": "930901",
+                                "name": "SALAS DE MASAJES",
+                                "description": "EN ESTA CLASE SE INCLUYE LAS SALAS DE MASAJES TERAPEUTICOS , BAÑOS TURCOS, VAPOR, SAUNA Y OTROS SERVICIOS RELACIONADOS CON EL BIENESTAR Y LOZANIA FISICAS."
+                            },
+                            {
+                                "code": "930903",
+                                "name": "OTRAS ACTIVIDADES DE SERVICIOS PERSONALES N.C.P.",
+                                "description": "COMPRENDE LOS SERVICIOS PRESTADOS POR PERSONAS A EMPRESAS A CAMBIO DE UNA RETRI-BUCION ECONOMICA. EJEMPLO: CONSERJES, MISCELANEOS, MENSAJEROS, BARTENDER O SALONEROS, BODEGUEROS, COBRADORES, EMPLEADAS DOMESTICAS, PERSONAS DEDICA- DAS A PERIFONEAR, AFILADORES A MANO O CON INSTRUMENTOS ELECTRICOS, CHOFERES DE BUSES, CHOFER DE MONTACARGA, ESTIBADORES DE CUALQUIER TIPO DE MERCANCIA, COCINERO(A), DISPLAY (DEMOSTRADORES DE PRODUCTOS), IMPULSADORES DE VENTAS, CHOFERES DE TRASPORTE DE PERSONAS, CHOFERES DE SERVICIOS ESPECIALES (ESTUDIANTES, TRABAJADORES Y TURISMO), CHOFER DE MONTACARGA DE CUALQUIER TIPO DE MERCANCIA, GUARDACABOS (SERVICIO DE AMARRE Y DESAMARRE DE BUQUES). SE EXCEPTUA LA PRESTACION DE SERVICIOS EN FORMA LIBERAL; POR EJEMPLO TODO PROFESIONAL O TECNICO QUE PRESTE SERVICIOS SIN QUE MEDIE RELACION DE DEPENDENCIA CON SUS CLIENTES."
+                            },
+                            {
+                                "code": "930904",
+                                "name": "CENTRO O SALA DE BRONCEADO",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE BRONCEADO ARTIFICIAL DE LA PIEL."
+                            },
+                            {
+                                "code": "930905",
+                                "name": "PELUQUERIA Y SALA DE ESTETICA PARA ANIMALES",
+                                "description": "EN ESTA CLASE SE INCLUYE LOS SERVICIOS BRINDADOS DE LAVADO, CORTE, RECORTE, PEINADO, CORTE DE UÑAS Y SIMILARES PARA TODO TIPO DE MASCOTAS."
+                            },
+                            {
+                                "code": "930906",
+                                "name": "SERVICIO DE TATUAJE Y PIERCING",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE TATUAR A LA PERSONAS Y LA COLOCACION DE PIERCING (ARETE)"
+                            },
+                            {
+                                "code": "930907",
+                                "name": "SERVICIO DE DISCO MOVIL",
+                                "description": "EN ESTA CLASE SE INCLUYE EL SERVICIO DE DISCO MOVIL (SE DIFERENCIA ESTA ACTIVIDAD DE OTRAS COMO SALON DE BAILE Y DISCOTECA, ESPECTACULOS PUBLICOS DESARROLLADOS FUERA O DENTRO DE UN TEATRO)."
+                            },
+                            {
+                                "code": "930908",
+                                "name": "SERVICIO DE HERRADURA",
+                                "description": "SEMICIRCULO DE HIERRO QUE SE PONE EN EN CASCO DE LOS CABALLOS PARA PROTECCION DELOS MISMOS."
+                            },
+                            {
+                                "code": "930915",
+                                "name": "ALBERGUE Y CUIDO DE ANIMALES A DOMICILIO",
+                                "description": "SE INCLUYE EN ESTA ACTIVIDAD EL CUIDO DE ANIMALES (MASCOTAS) EN LUGARES FIJOS COMO HOTELES, GUARDERIA, VILLAS, ETC, ASI COMO A DOMICILIO. PARA LA VENTA DE ACCESORIOS Y ALIMENTOS VER EL CODIGO DE ACTIVIDAD 523913."
+                            },
+                            {
+                                "code": "950001",
+                                "name": "HOGARES PRIVADOS CON SERVICIO DOMESTICO",
+                                "description": "ESTA CLASE ABARCA LAS ACTIVIDADES DE HOGARES PRIVADOS QUE EMPLEAN PERSONAL DOMESTICO DE TODO TIPO, COMO SIRVIENTES, COCINEROS, CAMAREROS, AYUDAS DE CAMARA, MAYORDOMOS, LAVANDEROS, JARDINEROS, PORTEROS, MOZOS DE CUADRA, CHOFERES, CONSERJES, INSTITUTRICES, NIÑERAS, PRECEPTORES, SECRETARIOS, ETC."
+                            },
+                            {
+                                "code": "960104",
+                                "name": "IMPUESTO A LAS PERSONAS JURIDICAS",
+                                "description": "EN ESTA CLASE SE ESTA INCLUYENDO EL IMPUESTO A LAS PERSONAS JURIDICAS LEY 9428 PARA TODAS SOCIEDADES MERCANTILES, LAS SUCURSALES DE UNA SOCIEDAD EXTRANJERA O SU REPRESENTANTE Y LAS EMPRESAS INDIVIDUALES DE RESPONSABILIDAD LIMITADA. LA FECHA DE INICIO DE ESTA OBLIGACION TRIBUTARIA PARA LAS SOCIEDADES INSCRITAS EN EL REGISTRO NACIONAL ES EL 01 DE SETIEMBRE DEL 2017 Y PARA LAS NUEVAS SOCIEDADEDES LA FECHA DE CONSTITUCION DE LA SOCIEDAD. ESTO SE DEFINE POR CUANTO ESTE CAMPO ES OBLIGATORIO YA QUE NO CORRESPONDE A LA REALIZACION DE UNA ACTIVIDAD ECONOMICA."
+                            },
+                            {
+                                "code": "960105",
+                                "name": "ACTIVIDADES PREOPERATIVAS O DE ORGANIZACION",
+                                "description": "EN ESTA CLASE SE INCLUYE A LAS PERSONAS FISICAS O JURIDICAS QUE ESTAN EN LA ETAPA PREVIA AL INICIO DE LA ACTIVIDAD ECONOMICA, ES DECIR AL INICIO DE OPERACIONES, PRESTACION DE UN SERVICIO O ENAJENACION DE BIENES, DENOMINADO GENERALMENTE COMO: PERIODO PREOPERATIVO O DE ORGANIZACION. ESTE PERIODO O ETAPA COMPRENDE EL LAPSO DE TIEMPO ENTRE LA FECHA DE CONSTITUCION DE LA SOCIEDAD O DE LAS ACTIVIDADES PREOPERATIVAS REFERENTES A LA CONTRATACION DE PERSONAL, ALQUILER O CONSTRUCCION DE OBRAS DE INFRAESTRUCTURA, ACONDICIONAMIENTO DE LOCALES O PLANTA PRODUCTIVA, ETC. ADEMAS, TRAMITES DE LICENCIAS, PERMISOS, PATENTES,EXONERACIONES,ENTRE OTROS; Y LA FECHA EN QUE SE INICIAN ACTIVIDADES ECONOMICAS AFECTAS A IMPUESTOS."
+                            },
+                            {
+                                "code": "960113",
+                                "name": "SOCIEDADES CONSTITUIDAS EN EL PAIS QUE NO DESARROLAN ACTIVIDAD DE FUENTE COSTARRICENSE",
+                                "description": "LEY 9635"
+                            },
+                            {
+                                "code": "990001",
+                                "name": "ACTIVIDADES DE ORGANIZACIONES Y ORGANOS EXTRATERRITORIALES, INCLUYE LAS EMBAJADAS DE OTROS PAISES",
+                                "description": "EN ESTA CLASE SE INCLUYEN LAS ACTIVIDADES DE ORGANIZACIONES INTERNACIONALES, COMO LAS NACIONES UNIDAS Y SUS ORGANISMOS ESPECIALIZADOS, ORGANOS REGIONALES, ETC.,LA ORGANIZACION DE LOS ESTADOS AMERICANOS, EL CONSEJO DE AYUDA MUTUA ECONOMICA,LAS COMUNIDADES EUROPEAS, LA ORGANIZACION DE COOPERACION Y DESARROLLO ECONOMICOS, LA ORGANIZACION DE LA UNIDAD AFRICANA, LA LIGA DE LOS ESTADOS ARABES, EL CONSEJO DE COOPERACION ADUANERA, LA ORGANIZACION DE PAISES EXPORTADORES DE PETROLEO,EL FONDO MONETARIO INTERNACIONAL, EL BANCO MUNDIAL, INCLUYE LAS EMBAJADAS DE OTROS PAISES EN COSTARICA. ExcepciOn: LA EMBAJADA DE COSTA RICA SE INCLUYE EN LA ACTIVIDAD 752101, YA QUE DICHA RAMA SE REFIERE A LA ADMINISTRACION PUBLICA, ES DECIR, LAS INSTITUCIONES DEL GOBIERNO DE COSTA RICA"
+                            }
+                        ]
+
+        for data in activity_data:
+            activity = self.env['mw.activity'].sudo().search([('code','=',data['code'])])
+            # If the Activity doesn't exist, create it.
+            if not activity:        
+                self.env['mw.activity'].sudo().create({'name': data['name'], 'code': str(data['code']), 'description': data['description']})
+
+        _logger.info("The Electronic Invoice Activities were stored in the database.")

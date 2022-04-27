@@ -1,0 +1,84 @@
+<odoo>
+    <!-- Form View for a Electronic invoice Note -->
+    <record model="ir.ui.view" id="mw_electronic_invoice.mw_electronic_invoice_notes">
+        <field name="name">Reference Details</field>
+        <field name="model">mw.credit_note</field>
+        <field name="arch" type="xml">
+            <form class="o_invoice_form" string="Reference Details">
+                <header>
+                    <button string='Send Note' name="create_note" type="object" class="btn-primary" attrs="{'invisible': ['|',('electronic_invoice_state', '!=', 'completed'),('state', '!=', 'pending')]}" />
+                    <button string='Consult Response' name="consultarespuestahacienda" type="object" class="btn-primary" attrs="{'invisible': ['|',('key', '=', False),('state', '!=', 'waiting')]}" />
+                    <field name="state" widget="statusbar" nolabel="1" />
+                </header>
+                <sheet string="Reference Details">
+                    <div class="container">
+                        <div>
+                            <h1 class="mt0 oe_left">Reference Details</h1>
+                        </div>
+                        <group class="o_group">
+                            <group class="o_group o_group_col_12">
+                                <field name="electronic_invoice" options="{'no_create': True}" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                <field name="invoice" options="{'no_create': True}"/>
+                            </group>
+                            <group class="o_group o_group_col_6">
+                                <field name="electronic_invoice_state" invisible="1" />
+                                <!-- <field name="electronic_invoice_document_type" attrs="{'readonly': [('state', '!=', 'pending')]}" /> -->
+                                <field name="reference_code" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                            </group>
+                            <group class="o_group o_group_col_6">
+                                <field name="reference_date" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                                <field name="electronic_invoice_key" />
+                            </group>
+                        </group>
+                        <group class="o_group mt-0">
+                            <group class="o_group o_group_col_12">
+                                <field name="reference_reason" attrs="{'readonly': [('state', '!=', 'pending')]}" />
+                            </group>
+                        </group>
+                    </div>
+                    <div class="container" attrs="{'invisible': [('key', '=', False)]}">
+                        <hr></hr>
+                        <div>
+                            <h1 class="mt0 oe_left">Response Details</h1>
+                        </div>
+                        <group class="o_group">
+                            <group class="o_group o_group_col_6">
+                                <field name="on_error" />
+                                <field name="key" />
+                            </group>
+                            <group class="o_group o_group_col_12">
+                                <field name="sent_XML_file_name" invisible="1" />
+                                <field name="sent_XML_file" filename="sent_XML_file_name" string="Sent File" />
+                                <field name="received_XML_file_name" invisible="1" />
+                                <field name="received_XML_file" filename="received_XML_file_name" string="Received File" />
+                            </group>
+                        </group>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- View of the List of Credit Notes -->
+    <record model="ir.ui.view" id="mw_credit_note_list">
+        <field name="name">Credit Note</field>
+        <field name="model">mw.credit_note</field>
+        <field name="arch" type="xml">
+            <tree string="Credit Notes" default_order="reference_date desc">
+                <field name="reference_date" widget="datetime" />
+                <field name="electronic_invoice_key" />
+                <field name="key" />
+                <field name="state" />
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action to open the list of Credit Notes -->
+    <record model="ir.actions.act_window" id="action_list_credit_notes">
+        <field name="name">Credit Notes</field>
+        <field name="res_model">mw.credit_note</field>
+        <field name="view_mode">form,tree</field>
+        <field name="view_id" ref="mw_credit_note_list" />
+    </record>
+
+</odoo>

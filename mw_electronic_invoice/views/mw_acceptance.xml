@@ -1,0 +1,66 @@
+<odoo>
+    <!-- Form View for a Electronic invoice -->
+    <record id="mw_electronic_invoice.mw_electronic_invoice_acceptance_form" model="ir.ui.view">
+        <field name="name">Acceptance</field>
+        <field name="model">mw.electronic_invoice_acceptance</field>
+        <field name="arch" type="xml">
+            <form class="o_invoice_form" string="Acceptance" create="false">            
+                <header>
+                    <button string='Update PDF' name="update_PDF_preview" type="object" class="btn-primary" attrs="{'invisible': [('state', '=', 'open')]}"/>
+                    <field name="state" widget="statusbar" nolabel="1"/>
+                </header>
+                <sheet string="Electronic Invoice">
+                    <div class="container mt-2 mb-5" style="overflow-x: auto;">
+                        <center>
+                            <h1 class="my-5">Accept Electronic Invoice</h1>
+                        </center>
+                        <group class="o_group text-center">
+                            <group class="o_group" style="width: 62%;">
+                                <field name="xml_name" invisible="1"/>
+                                <field name="xml_file" filename="xml_name" attrs="{'readonly': [('state', '=', 'accepted')]}"/>
+                            </group>
+                            <group class="o_group o_group_col_12">
+                                <button string='Load Document' name="load_document" type="object" class="btn-primary center" attrs="{'invisible': [('state', '=', 'accepted')]}"/>
+                            </group>
+                        </group>
+                        <group class="o_group text-center">
+                            <group class="o_group o_group_col_6 text-left">
+                                <field name="key"/>
+                                <field name="emitter_vat_id"/>
+                                <field name="emitter_name"/>
+                                <field name="issue_date"/>
+                                <field name="receiver_vat_id"/>
+                                <field name="receiver_economic_activity" attrs="{'readonly': [('state', '=', 'accepted')]}"/>
+                                <field name="tax_total_amount"/>
+                                <field name="tax_condition" attrs="{'readonly': [('state', '=', 'accepted')]}"/>
+                                <field name="tax_credit" attrs="{'readonly': [('state', '=', 'accepted')]}"/>
+                                <field name="applicable_expense" attrs="{'readonly': [('state', '=', 'accepted')]}"/>
+                                <field name="total_invoice"/>
+                                <field name="presentation_situation" attrs="{'readonly': [('state', '=', 'accepted')]}"/>
+                                <field name="message" attrs="{'readonly': [('state', '=', 'accepted')]}"/>
+                                <field name="message_detail" attrs="{'readonly': [('state', '=', 'accepted')]}"/>
+                                <field name="receiver_consecutive"/>
+                            </group>
+                        </group>
+                        <group class="o_group text-center">
+                            <group class="o_group o_group_col_6">
+                                <field name="xml_response_name" invisible="1"/>
+                                <field name="xml_response" filename="xml_response_name"/>
+                            </group>
+                        </group>
+                        <group class="o_group">
+                            <group class="o_group o_group_col_12 text-center">
+                                <button string='Accept Document' name="accept_bounce" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'open')]}"/>
+                            </group>
+                        </group>
+                        <group class="o_group">
+                            <group class="o_group o_group_col_12 text-center">
+                                <field name="pdf_preview" string="" widget="pdf_viewer" attrs="{'invisible': [['pdf_preview','=',False]]}"/>
+                            </group>
+                        </group>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

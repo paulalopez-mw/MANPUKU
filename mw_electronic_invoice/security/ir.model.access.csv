@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+mw_province,mw_province,model_mw_province,,1,1,1,1
+mw_canton,mw_canton,model_mw_canton,,1,1,1,1
+mw_district,mw_district,model_mw_district,,1,1,1,1
+mw_street,mw_street,model_mw_street,,1,1,1,1
+mw_activity,mw_activity,model_mw_activity,,1,1,1,1
+mw_electronic_invoice,mw_electronic_invoice,model_mw_electronic_invoice,,1,1,1,1
+mw_electronic_invoice_log,mw_electronic_invoice_log,model_mw_electronic_invoice_log,,1,1,1,1
+mw_electronic_invoice_acceptance,mw_electronic_invoice_acceptance,model_mw_electronic_invoice_acceptance,,1,1,1,1
+mw_electronic_invoice_cabys,mw_electronic_invoice_cabys,model_mw_electronic_invoice_cabys,,1,1,1,1
+mw_credit_note,mw_credit_note,model_mw_credit_note,,1,1,1,1

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Add in Groups Automated -->
+    <record id="not_delete_completed_electronic_invoices" model="base.automation">
+        <field name="name">Not Delete Completed Electronic Invoices</field>
+        <field name="model_id" ref="mw_electronic_invoice.model_mw_electronic_invoice"/>
+        <field name="active" eval="True"/>		
+        <field name="state">code</field>
+        <field name="trigger">on_unlink</field> 
+        <field name="code">
+if record.state != 'pending':
+    raise Warning('Only Pending Electronic Invoices can be deleted.')
+        </field>    
+    </record>     
+</odoo>
+ 

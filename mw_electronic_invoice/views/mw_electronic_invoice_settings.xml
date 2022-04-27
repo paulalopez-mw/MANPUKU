@@ -1,0 +1,91 @@
+<odoo>
+    <!-- View for Electronic Invoice Settings -->
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.mw_electronic_invoice_settings</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('settings')]" position="inside">
+                <div class="app_settings_block" data-string="Electronic Invoice" string="Electronic Invoice" data-key="mw_electronic_invoice">
+                    <h2>Electronic Invoice Settings</h2>
+                    <div class="row mt16 o_settings_container" id="electronic_invoice_config">
+                        <div id="is_sandbox" class="col-12 col-lg-6 o_setting_box" title="Sandbox">
+                            <label for="is_sandbox" string="Sandbox" />
+                            <field name="is_sandbox" class="oe_inline" />
+                        </div>
+                        <div id="api_key" class="col-12 col-lg-6 o_setting_box" title="API Key">
+                            <label for="api_key" />
+                            <field name="api_key" password="True" class="oe_inline" />
+                        </div>
+                        <div id="emitter" class="col-12 col-lg-6 o_setting_box" title="Emitter">
+                            <label for="emitter" />
+                            <field name="emitter" class="oe_inline" />
+                        </div>
+                        <div id="next_consecutive" class="col-12 col-lg-6 o_setting_box" title="Next Consecutive">
+                            <label for="next_consecutive" />
+                            <field name="next_consecutive" class="oe_inline" />
+                        </div>
+                        <div id="receptor_email" class="col-12 col-lg-6 o_setting_box" title="Receptor Email">
+                            <label for="receptor_email" />
+                            <field name="receptor_email" class="oe_inline" />
+                        </div>
+                        <div id="next_consecutive" class="col-12 col-lg-6 o_setting_box" title="Next Consecutive (Credit Notes)">
+                            <label for="next_credit_note_consecutive" />
+                            <field name="next_credit_note_consecutive" class="oe_inline" />
+                        </div>
+                    </div>
+
+                    <h2>User Parameters</h2>
+                    <div class="row mt16 o_settings_container" id="electronic_invoice_parameters">
+                        <div id="frm_usuario" class="col-12 col-lg-6 o_setting_box" title="Usuario">
+                            <label for="frm_usuario" string="Usuario" />
+                            <field name="frm_usuario" class="oe_inline" />
+                        </div>
+                        <div id="frm_callback_url" class="col-12 col-lg-6 o_setting_box" title="Callback URL">
+                            <label for="frm_callback_url" string="Callback URL"/>
+                            <field name="frm_callback_url" class="oe_inline" />
+                        </div>
+                        <div id="frm_password" class="col-12 col-lg-6 o_setting_box" title="Password">
+                            <label for="frm_password" string="Password"/>
+                            <field name="frm_password" password="True" class="oe_inline" />
+                        </div>
+                        <div id="accept_button" class="col-12 col-lg-6 o_setting_box" title="Update">
+                            <button string='Update' name="update_user" type="object" class="btn-primary" />
+                        </div>
+                    </div>
+
+                    <h2>Certificate</h2>
+                    <div class="row mt16 o_settings_container" id="electronic_invoice_parameters">
+                        <div id="frm_crt" class="col-12 col-lg-6 o_setting_box" title="Certificate">
+                            <field name="frm_crt_name" invisible="1" />
+                            <field name="frm_crt" filename="frm_crt_name" />
+                        </div>
+                        <div id="frm_pin" class="col-12 col-lg-6 o_setting_box" title="PIN">
+                            <label for="frm_pin" string="PIN"/>
+                            <field name="frm_pin" class="oe_inline" />
+                        </div>
+                        <div id="update_button" class="col-12 col-lg-6 o_setting_box" title="Update">
+                            <button string='Update' name="update_crt" type="object" class="btn-primary" />
+                        </div>
+                    </div>
+
+                    <h2>Acceptances</h2>
+                    <div class="row mt16 o_settings_container" id="electronic_invoice_parameters">
+                        <div id="next_full_acceptance_consecutive" class="col-12 col-lg-6 o_setting_box" title="Full Acceptance">
+                            <label for="next_full_acceptance_consecutive" />
+                            <field name="next_full_acceptance_consecutive"/>
+                        </div>
+                        <div id="next_partial_acceptance_consecutive" class="col-12 col-lg-6 o_setting_box" title="Partial Acceptance">
+                            <label for="next_partial_acceptance_consecutive" />
+                            <field name="next_partial_acceptance_consecutive" />
+                        </div>
+                        <div id="next_rejection_consecutive" class="col-12 col-lg-6 o_setting_box" title="Rejection">
+                            <label for="next_rejection_consecutive" />
+                            <field name="next_rejection_consecutive" />
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

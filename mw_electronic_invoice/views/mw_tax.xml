@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>    
+        <record model="ir.ui.view" id="mw_account_invoice_tax_atv">
+            <field name="name">account.tax.form.inherited.atv</field>
+            <field name="model">account.tax</field>
+            <field name="inherit_id" ref="account.view_tax_form" />
+            <field name="priority" eval="15"/>
+            <field name="arch" type="xml">
+               <xpath expr="//notebook" position="inside">
+                    <page string="ATV Information">
+                        <group class="o_group o_group_col_12">
+                            <group>
+                                <field name="mw_tax_code"/>
+                                <field name="mw_tax_rate_code" attrs="{'invisible':[('mw_tax_code','not in','01'),('mw_tax_code','not in','07')], 'required': ['|',('mw_tax_code','=','01'),('mw_tax_code','=','07')]}"/>
+                                <field name="mw_tax_rate" attrs="{'invisible': ['|',('mw_tax_code','=','08'),('mw_tax_code','=',False)], 'readonly': ['|',('mw_tax_code','=','01'),('mw_tax_code','=','07')], 'required': [('mw_tax_code','not in','01'),('mw_tax_code','not in','07')]}" />
+                            </group>
+                            <group>
+                                <field name="mw_tax_export" attrs="{'invisible': [('mw_tax_code', '=', False)]}"/>
+                            </group>
+                        </group>
+                        <group class="o_group o_group_col_12">
+                            <group>
+                                <field name="mw_exoneration_type" attrs="{'invisible': [('mw_tax_code', '=', False)]}"/>
+                                <field name="mw_exoneration_number" attrs="{'invisible': ['|', ('mw_exoneration_type', '=', False), ('mw_tax_code', '=', False)], 'required': [('mw_exoneration_type', 'not in', False)]}"/>
+                                <field name="mw_exoneration_percentage" attrs="{'invisible': ['|', ('mw_exoneration_type', '=', False), ('mw_tax_code', '=', False)], 'required': [('mw_exoneration_type', 'not in', False)]}"/>
+                            </group>
+                            <group>
+                                <field name="mw_exoneration_date" attrs="{'invisible': ['|', ('mw_exoneration_type', '=', False), ('mw_tax_code', '=', False)], 'required': [('mw_exoneration_type', 'not in', False)]}"/>
+                                <field name="mw_exoneration_institution" attrs="{'invisible': ['|', ('mw_exoneration_type', '=', False), ('mw_tax_code', '=', False)], 'required': [('mw_exoneration_type', 'not in', False)]}"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- View of the List of Electronic Invoices -->
+    <record model="ir.ui.view" id="mw_electronic_invoice_log_list">
+        <field name="name">Electronic Invoice Log</field>
+        <field name="model">mw.electronic_invoice_log</field>
+        <field name="arch" type="xml">
+            <tree string="Electronic Invoice Log" default_order="issue_datetime desc">
+                <field name="issue_datetime" widget="datetime"/>
+                <field name="electronic_invoice_number" string="Invoice"/>
+                <field name="success"/>
+                <field name="is_a_request"/>
+                <field name="url"/>
+            </tree>
+        </field>
+    </record>    
+
+    <record id="mw_electronic_invoice_search" model="ir.ui.view">
+        <field name="name">mw.electronic_invoice.search</field>
+        <field name="model">mw.electronic_invoice</field>
+        <field name="arch" type="xml">
+            <search string="Electronic Invoices">            
+                <filter string="Completed" name="completed" domain="[('state', '=', 'completed')]"/>
+                <filter string="Pending" name="pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="Waiting Response" name="completed" domain="[('state', '=', 'waiting_response')]"/>
+                <filter string="On Error" name="on_error" domain="[('on_error', '=', True)]"/>
+                <field name="invoice_customer"/>
+                <field name="key"/>
+                <field name="invoice_user_id"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- View of the List of Electronic Invoices -->
+    <record model="ir.ui.view" id="mw_electronic_invoice_list">
+        <field name="name">Electronic Invoices</field>
+        <field name="model">mw.electronic_invoice</field>
+        <field name="arch" type="xml">
+            <tree string="Electronic Invoices" default_order="create_date desc">
+                <field name="id"/>
+                <field name="invoice_number"/>
+                <field name="state"/>
+                <field name="create_date"/>
+                <field name="__last_update"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action to open the list of Electronic Invoice Logs -->
+    <record model="ir.actions.act_window" id="action_list_electronic_invoice_log">
+        <field name="name">Electronic Invoice Logs</field>
+        <field name="res_model">mw.electronic_invoice_log</field>
+        <field name="view_mode">form,tree</field>
+        <field name="view_id" ref="mw_electronic_invoice_log_list"/>
+    </record>
+
+    <!-- Action to open the list of Electronic Invoices -->
+    <record model="ir.actions.act_window" id="action_list_electronic_invoice">
+        <field name="name">Electronic Invoices</field>
+        <field name="res_model">mw.electronic_invoice</field>
+        <field name="view_mode">form,tree</field>
+        <field name="view_id" ref="mw_electronic_invoice_list"/>
+        <field name="search_view_id" ref="mw_electronic_invoice_search"/>
+    </record>
+
+    <menuitem id="mw_electronic_invoice" name="Electronic Invoice" parent="account_accountant.menu_accounting" sequence="2"/>
+
+    <menuitem id="menu_electronic_invoice" name="Electronic Invoices" action="action_list_electronic_invoice" parent="mw_electronic_invoice.mw_electronic_invoice" sequence="1" />
+    <menuitem id="menu_electronic_invoice_log" name="Logs" action="action_list_electronic_invoice_log" parent="mw_electronic_invoice.mw_electronic_invoice" sequence="2" />
+    <menuitem id="menu_electronic_invoice_acceptance" name="Acceptances" action="action_list_electronic_invoice_acceptance" parent="mw_electronic_invoice.mw_electronic_invoice" sequence="3" />
+    <menuitem id="menu_credit_note" name="Credit Notes" action="action_list_credit_notes" parent="mw_electronic_invoice.mw_electronic_invoice" sequence="4" />
+
+</odoo>

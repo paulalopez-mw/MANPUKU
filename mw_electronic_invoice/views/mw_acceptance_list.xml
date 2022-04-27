@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- View of the List of Electronic Invoices -->
+    <record model="ir.ui.view" id="mw_electronic_invoice_acceptance_list">
+        <field name="name">Electronic Invoice Acceptances</field>
+        <field name="model">mw.electronic_invoice_acceptance</field>
+        <field name="arch" type="xml">
+            <tree string="Electronic Invoice Acceptance" default_order="create_date desc">
+                <field name="create_date" widget="datetime"/>
+                <field name="key"/>
+                <field name="state"/>
+                <field name="emitter_name"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action to open the list of Electronic Invoice Logs -->
+    <record model="ir.actions.act_window" id="action_list_electronic_invoice_acceptance">
+        <field name="name">Electronic Invoice Acceptances</field>
+        <field name="res_model">mw.electronic_invoice_acceptance</field>
+        <field name="view_mode">form,tree</field>
+        <field name="view_id" ref="mw_electronic_invoice_acceptance_list"/>
+    </record>
+
+</odoo>

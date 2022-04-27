@@ -1,0 +1,301 @@
+<odoo>
+
+    <record id="mw_electronic_invoice_report" model="ir.actions.report">
+        <field name="name">Midware Electronic Invoice Report</field>
+        <field name="model">mw.electronic_invoice</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">mw_electronic_invoice.mw_eletronic_invoice_view</field>
+        <field name="report_file">mw_electronic_invoice.mw_eletronic_invoice</field>
+        <field name="binding_model_id" ref="model_mw_electronic_invoice" />
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="mw_eletronic_invoice_view">
+        <t t-call="web.html_container">
+            <t t-set="body_classname" t-value="'container'" />
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.report_layout">
+                    <div class="page">
+
+                        <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet" />
+                        <style></style>
+                        <div class="row" style="font-family: Roboto-Light;padding-top:25px;font-size:12px;">
+                            <div style="padding-left:15px;width:160px !important;margin:auto 35px auto 0px">
+                                <img class="img-fluid" style="width:130px" src="/web/image/23364/Asset%202@2x.jpg?access_token=133d8009-1c41-4c62-b778-5df3e4c60dad" />
+                            </div>
+                            <div class="col-5">
+                                <div class="row">
+                                    <h5 style="color: #1564D2" class="o_bold" t-field="doc.emitter_name" />
+                                </div>
+                                <div class="row">
+                                    <p style="width:100px;margin-bottom:0px;">Cédula:</p>
+                                    <span t-field="doc.emitter_vat" />
+                                </div>
+                                <div class="row">
+                                    <p style="width:100px;padding-right:3px">Dirección:</p>
+                                    <p style="width:260px;margin-bottom:2px;">
+                                        <span t-field="doc.emitter_other_signs" />
+                                        ,
+                                        <span t-field="doc.emitter_ubication_street" />
+                                        ,
+                                        <span t-field="doc.emitter_ubication_district" />
+                                        ,
+                                        <span t-field="doc.emitter_ubication_canton" />
+                                        ,
+                                        <span t-field="doc.emitter_ubication_province" />
+                                        .
+                                    </p>
+                                </div>
+                                <div class="row">
+                                    <p style="width:100px;margin-bottom:0px;">Teléfono:</p>
+                                    <span t-field="doc.emitter_phone_number" />
+                                </div>
+                                <div class="row">
+                                    <p style="width:100px;margin-bottom:0px;">E-mail:</p>
+                                    <span t-field="doc.emitter_email" />
+                                </div>
+                            </div>
+                            <div t-if="doc.key" class="col-4" style="text-align:right; padding:0px;">
+                                <span class="small o_bold" style="color: #103160">Comprobante Electrónico</span>
+                                <h6 class="o_bold" style="color: #103160;margin-bottom:0px;">Factura Electrónica:</h6>
+                                <h6 class="o_bold" style="color: #103160">
+                                    <t t-esc="doc.key[21:41]" />
+                                </h6>
+                                <p class="row" style="margin-left:100px;">
+                                    <span style="padding-right:5px;">Fecha:</span>
+                                    <span t-field="doc.__last_update" />
+                                </p>
+                            </div>
+                        </div>
+                        <hr style="border-top: 1px solid #000; margin: 20px 0px 30px 0px;" />
+                        <div class="row" style="font-family: Roboto-Light, sans-serif;font-size:12px;">
+                            <div class="col-6" style="padding-left:15px;">
+                                <div class="row ml-0">
+                                    <h5 class="o_bold" style="color:#1564d2;" t-field="doc.receiver_name" />
+                                </div>
+                                <div class="row ml-0">
+                                    <p style="width:140px;margin-bottom:0px;">Tipo de Identificación:</p>
+                                    <p class="o_bold" style="padding-left:5px;color: #103160;margin-bottom:0px" t-field="doc.receiver_vat_type" />
+                                </div>
+                                <div class="row ml-0">
+                                    <p style="width:140px;margin-bottom:0px;">Número de Identificación:</p>
+                                    <p class="o_bold" style="padding-left:5px;color: #103160;margin-bottom:0px" t-field="doc.receiver_vat_id" />
+                                </div>
+                                <div class="row ml-0" t-if="doc.receiver_vat_id == '01' or doc.receiver_vat_id == '01'">
+                                    <p style="width:140px;">Dirección:</p>
+                                    <p style="padding-left:5px;width:500px;margin-bottom:2px">
+                                        <span t-field="doc.receiver_other_signs" />
+                                        ,
+                                        <span t-field="doc.receiver_ubication_street" />
+                                        ,
+                                        <span t-field="doc.receiver_ubication_district" />
+                                        ,
+                                        <span t-field="doc.receiver_ubication_canton" />
+                                        ,
+                                        <span t-field="doc.receiver_ubication_province" />
+                                        .
+                                    </p>
+                                </div>
+                                <div class="row ml-0" t-if="doc.receiver_phone_number and doc.receiver_phone_number != '00000000'">
+                                    <p style="width:140px;">Teléfono:</p>
+                                    <p style="padding-left:5px;">
+                                        + (
+                                        <span t-field="doc.receiver_phone_code" />
+                                        )
+                                        <span t-field="doc.receiver_phone_number" />
+                                    </p>
+                                </div>
+                                <div class="row ml-0" t-if="doc.receiver_email">
+                                    <p style="width:140px;margin-top:0px;">E-mail:</p>
+                                    <p style="padding-left:5px;margin-bottom:0px" t-field="doc.receiver_email" />
+                                </div>
+                            </div>
+                            <div class="col-6" style="padding-right:20px">
+                                <div class="row" style="text-align:right">
+                                    <h5 class="o_bold" style="color:#1564d2;width:100%;padding-right:10px">Información de Pago</h5>
+                                </div>
+                                <div class="row" style="width:47%">
+                                    <p style="width:110px;margin-bottom:0px;margin-left:auto;">Condición de Venta:</p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '01'">
+                        Contado
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '02'">
+                        Crédito
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '03'">
+                        Consignación
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '04'">
+                        Apartado
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '05'">
+                        Arrendamiento con opción de compra
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '06'">
+                        Arrendamiento en función financiera
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '07'">
+                        Cobro a favor de un tercero
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '08'">
+                        Servicios prestados al Estado a crédito
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '09'">
+                        Pagos de servicio prestado al Estado
+                    </p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right" t-if="doc.sale_condition == '99'">
+                        Otro
+                    </p>
+                                </div>
+                                <div class="row" style="width:47%">
+                                    <p style="width:110px;margin-bottom:0px;margin-left:auto;">Tipo de Cambio:</p>
+                                    <p class="o_bold" style="margin-bottom:0px;width:210px;text-align:right" t-esc="'%.2f'% doc.exchange_rate" />
+                                </div>
+                                <div class="row" style="width:47%">
+                                    <p style="width:110px;margin-bottom:0px;margin-left:auto;">Código de Moneda:</p>
+                                    <p class="o_bold" style="margin-bottom:0px;width:210px;text-align:right" t-field="doc.invoice_currency_id" />
+                                </div>
+                                <div class="row" style="width:47%">
+                                    <p style="width:110px;margin-bottom:0px;margin-left:auto;">Medio de Pago:</p>
+                                    <p style="margin-bottom:0px;width:210px;text-align:right">
+                                        <span t-if="doc.payment_method_check">
+                        Cheque
+                    </span>
+                                        <span t-if="doc.payment_method_cash">
+                        Efectivo
+                    </span>
+                                        <span t-if="doc.payment_method_third">
+                        Recaudado por terceros
+                    </span>
+                                        <span t-if="doc.payment_method_card">
+                        Tarjeta
+                    </span>
+                                        <span t-if="doc.payment_method_transfer">
+                        Transferencia – depósito bancario
+                    </span>
+                                        <span t-if="doc.payment_method_other">
+                        Otro
+                    </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top:30px; margin-bottom:35px;font-family: Roboto-Light, sans-serif;font-size:12px">
+                            <table class="table o_report_block_table" style="box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.03), 0 10px 20px 0 rgba(0, 0, 0, 0.06), 0 15px 30px 0 rgba(0, 0, 0, 0.03), 0 5px 10px 0 rgba(10, 132, 189, 0.1);">
+                                <thead>
+                                    <tr style="text-align:right; background-color:#00b4ea; color:#fff;">
+                                        <th style="text-align:left;border-right:2px solid #fff;border-bottom:2px solid #fff;padding: 0.4rem;">
+                                            <span>No</span>
+                                        </th>
+                                        <th style="text-align:left;border-right:2px solid #fff;border-bottom:2px solid #fff;padding: 0.4rem;">
+                                            <span>DESCRIPCION</span>
+                                        </th>
+                                        <th style="border-right:2px solid #fff;border-bottom:2px solid #fff;padding: 0.4rem;">
+                                            <span>CANT</span>
+                                        </th>
+                                        <th style="border-right:2px solid #fff;border-bottom:2px solid #fff;padding: 0.4rem;">
+                                            <span>PRECIO</span>
+                                        </th>
+                                        <th style="border-right:2px solid #fff;border-bottom:2px solid #fff;padding: 0.4rem;">
+                                            <span>DESCUENTO</span>
+                                        </th>
+                                        <th style="border-right:2px solid #fff;border-bottom:2px solid #fff;padding: 0.4rem;">
+                                            <span>IMPUESTO</span>
+                                        </th>
+                                        <th style="border-bottom:2px solid #fff;padding: 0.4rem;">
+                                            <span>SUBTOTAL</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody style="text-align:right;">
+                                    <t t-set="counter" t-value="0" />
+                                    <tr t-foreach="doc.invoice_lines" t-as="table_line">
+                                        <t t-set="counter" t-value="counter + 1" />
+                                        <td style="text-align:left;padding: 0.3rem;">
+                                            <span t-esc="counter" />
+                                        </td>
+                                        <td style="text-align:left;padding: 0.3rem;">
+                                            <span t-field="table_line.display_name" />
+                                        </td>
+                                        <td style="padding: 0.3rem;">
+                                            <span t-esc="'%.2f'% table_line.quantity" />
+                                        </td>
+                                        <td style="padding: 0.3rem;">
+                                            <span style="padding-right:3px;" t-field="doc.invoice_currency_id" />
+                                            <span t-field="table_line.price_unit" />
+                                        </td>
+                                        <td style="padding: 0.3rem;">
+                                            <span style="padding-right:3px;" t-field="doc.invoice_currency_id" />
+                                            <span t-field="table_line.discount" />
+                                        </td>
+                                        <!--<td style="padding: 0.3rem;">-->
+                                        <!--  <span style="padding-right:3px;" t-field="doc.invoice_currency_id"/>-->
+                                        <!--  <span t-field="table_line.price_tax" t-options-widget="''"/>-->
+                                        <!--</td>-->
+                                        <td style="padding: 0.3rem;">
+                                            <span style="padding-right:3px;" t-field="doc.invoice_currency_id" />
+                                            <span t-field="table_line.price_subtotal" t-options-widget="''" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="font-family: Roboto-Light, sans-serif;font-size:12px;padding-top:40px;">
+                            <div class="row ml-0">
+                                <div class="col-3">
+                                    <div class="row">
+                                        <p style="width:120px;margin-bottom:0px;">Servicios Exentos:</p>
+                                        <p style="margin-bottom: 0px;margin-left: auto;">
+                                            <span style="padding-right:3px;" t-field="doc.invoice_currency_id" />
+                                            <span t-esc="'%.2f'% doc.total_service_exempt" />
+                                        </p>
+                                    </div>
+                                    <div class="row">
+                                        <p style="width:120px;margin-bottom:0px;">Subtotal:</p>
+                                        <t t-set="subtotal" t-value="0" />
+                                        <t t-foreach="doc.invoice_lines" t-as="line">
+                                            <t t-set="subtotal" t-value="subtotal + line.price_subtotal" />
+                                        </t>
+                                        <p style="margin-bottom: 0px;margin-left: auto;">
+                                            <span style="padding-right:3px;" t-field="doc.invoice_currency_id" />
+                                            <span t-esc="subtotal" t-options-widget="''" />
+                                        </p>
+                                    </div>
+                                    <div class="row">
+                                        <p style="width:120px;margin-bottom:0px;">Descuento:</p>
+                                        <p style="margin-bottom: 0px;margin-left: auto;">
+                                            -
+                                            <span style="padding:0px 3px 0px 3px;" t-field="doc.invoice_currency_id" />
+                                            <span t-esc="'%.2f'% doc.total_discount" />
+                                        </p>
+                                    </div>
+                                    <div class="row">
+                                        <p style="width:120px;margin-bottom:0px;">Impuestos:</p>
+                                        <p style="margin-bottom: 0px;margin-left: auto;">
+                                            +
+                                            <span style="padding:0px 3px 0px 3px;" t-field="doc.invoice_currency_id" />
+                                            <span t-esc="'%.2f'% doc.total_tax" />
+                                        </p>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <p class="o_bold" style="color: #103160;width:120px;margin-bottom:0px;">Total:
+            </p>
+                                        <p style="margin-bottom: 0px;margin-left: auto;">
+                                            <span class="o_bold" style="color: #103160;padding-right:3px;" t-field="doc.invoice_currency_id" />
+                                            <span class="o_bold" style="color: #103160" t-esc="'%.2f'% doc.invoice_amount_total" />
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr style="border-top: 2px solid #000; margin:20px 0px 0px;" />
+                        <div class="row" style="font-family: Roboto-Light, sans-serif;color: #103160;">
+                            <p class="small o_bold" t-field="doc.key" style="width: 360px;margin:auto;" />
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo> 

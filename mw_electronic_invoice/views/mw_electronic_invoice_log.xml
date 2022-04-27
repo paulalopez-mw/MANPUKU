@@ -1,0 +1,55 @@
+<odoo>
+    <!-- Form View for Electronic invoice -->
+    <record model="ir.ui.view" id="mw_electronic_invoice.mw_electronic_invoice_log_form">
+        <field name="name">Electronic Invoice Log</field>
+        <field name="model">mw.electronic_invoice_log</field>
+        <field name="priority" eval="16"/>
+        <field name="arch" type="xml">
+            <form class="o_invoice_form" string="MW Electronic Invoice Log Form View">
+                <sheet string="Electronic Invoice Log">
+                    <div class="container mt-2 mb-5" style="overflow-x: auto;">
+                        <center>
+                            <h1>Electronic Invoice Log</h1>
+                        </center>
+                        <group class="o_group">
+                            <group class="o_group o_group_col_6">
+                                <field name="amount"/>
+                                <field name="is_a_request"/>
+                                <field name="success"/>
+                            </group>
+                            <group class="o_group o_group_col_6">
+                                <field name="issue_datetime" widget="datetime"/>
+                                <field name="credit_note" attrs="{'invisible': [('credit_note', '=', False)]}"/>
+                                <field name="electronic_invoice" attrs="{'invisible': [('electronic_invoice', '=', False)]}"/>
+                                <field name="acceptance" attrs="{'invisible': [('acceptance', '=', False)]}"/>
+                            </group>
+                        </group>
+                        <group class="o_group" attrs="{'invisible': [('rejection_message', '=', False)]}">
+                            <group class="o_group o_group_col_12">
+                                <field name="rejection_message"/>
+                            </group>
+                        </group>
+                        <group class="o_group" attrs="{'invisible': [('code', '=', False)]}">
+                            <group class="o_group o_group_col_6">
+                                <field name="code"/>
+                            </group>
+                            <group class="o_group o_group_col_6">
+                                <field name="message"/>
+                            </group>
+                            <group class="o_group o_group_col_12">
+                                <field name="comments"/>
+                            </group>
+                        </group>
+                        <group class="o_group">
+                            <group class="o_group o_group_col_12">
+                                <field name="url"/>
+                                <field name="request"/>
+                                <field name="response"/>
+                            </group>
+                        </group>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
